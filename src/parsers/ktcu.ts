@@ -43,7 +43,8 @@ function parseDateRange(dateRangeText: string): { startDate: string; endDate: st
   const normalized = dateRangeText.replace(/&nbsp;/g, ' ').trim();
 
   // Pattern: YYYY-MM-DD(요일) ~ YYYY-MM-DD(요일)
-  const match = normalized.match(/(\d{4})-(\d{2})-(\d{2})\([^)]+\)\s*~\s*(\d{4})-(\d{2})-(\d{2})\([^)]+\)/);
+  // Also handle case where there's no parentheses (day of week)
+  const match = normalized.match(/(\d{4})-(\d{2})-(\d{2})(?:\([^)]+\))?\s*~\s*(\d{4})-(\d{2})-(\d{2})(?:\([^)]+\))?/);
 
   if (!match) {
     return null;
@@ -84,8 +85,9 @@ function isEventOngoing(endDateStr: string): boolean {
  */
 function normalizeText(text: string): string {
   return text
-    .replace(/<[^>]+>/g, ' ') // Remove HTML tags
-    .replace(/\s+/g, ' ') // Normalize multiple spaces
+    .replace(/<br\s*\/?>/gi, ' ') // Replace <br> tags with space
+    .replace(/<[^>]+>/g, '') // Remove other HTML tags
+    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
     .trim();
 }
 
@@ -120,7 +122,9 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
 
         // AC-2: Extract title from <strong class="tit">
         const titleElement = $el.find('strong.tit');
-        const title = normalizeText(titleElement.html() || '');
+        // Use html() and parse to handle <br> tags properly
+        const titleHtml = titleElement.html() || '';
+        const title = normalizeText(titleHtml);
 
         // AC-3: Extract and parse date range from <p class="date">
         const dateElement = $el.find('p.date');
