@@ -1,6 +1,7 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 
 import { BloodinfoParser } from './parser';
+import { KtcuParser } from './parsers/ktcu';
 import { filterNewEvents, markEventAsSent } from './kv';
 import { sendEventNotification, sendErrorNotification } from './telegram';
 import type { SiteParser, SiteEvent } from './types/site-parser';
@@ -17,10 +18,11 @@ interface ScheduledEvent {
 
 /**
  * Site parser registry - add new parsers here
+ * TRACE: SPEC-KTCU-PARSER-001
  */
 const siteParserRegistry: SiteParser[] = [
   new BloodinfoParser(),
-  // Add more parsers here: new KtcuParser(), new OtherSiteParser(), etc.
+  new KtcuParser(),
 ];
 
 /**
