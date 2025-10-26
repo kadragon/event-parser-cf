@@ -3,6 +3,20 @@ import type { Event } from './parser';
 import type { SiteEvent } from './types/site-parser';
 
 /**
+ * Get siteId from event object (supports both Event and SiteEvent)
+ */
+function getSiteId(event: Event | SiteEvent): string {
+  return 'siteId' in event ? event.siteId : 'bloodinfo';
+}
+
+/**
+ * Get siteName from event object (supports both Event and SiteEvent)
+ */
+function getSiteName(event: Event | SiteEvent): string {
+  return 'siteName' in event ? event.siteName : '';
+}
+
+/**
  * Build Telegram message from events (supports both legacy Event and new SiteEvent)
  *
  * @param events - Events to notify about
@@ -16,7 +30,7 @@ function buildEventMessage(events: Array<Event | SiteEvent>): string {
   // Group events by site
   const eventsBySite: { [siteId: string]: Array<Event | SiteEvent> } = {};
   for (const event of events) {
-    const siteId = (event as any).siteId || 'bloodinfo';
+    const siteId = getSiteId(event);
     if (!eventsBySite[siteId]) {
       eventsBySite[siteId] = [];
     }
@@ -27,7 +41,7 @@ function buildEventMessage(events: Array<Event | SiteEvent>): string {
 
   for (const siteId in eventsBySite) {
     const siteEvents = eventsBySite[siteId];
-    const siteName = (siteEvents[0] as any).siteName || siteId;
+    const siteName = getSiteName(siteEvents[0]);
 
     message += `<b>📍 ${siteName}</b>\n`;
 
