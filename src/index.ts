@@ -5,10 +5,9 @@ import { filterNewEvents, markEventAsSent } from './kv';
 import { sendEventNotification, sendErrorNotification } from './telegram';
 
 interface Env {
-  EVENTS_KV: KVNamespace;
+  BLOODINFO_EVENTS_KV: KVNamespace;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
-  ENVIRONMENT: string;
 }
 
 interface ScheduledEvent {
@@ -33,7 +32,7 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
 
     // Step 2: Filter to only new events
     console.log('Step 2: Filtering new events...');
-    const newEvents = await filterNewEvents(env.EVENTS_KV, allEvents);
+    const newEvents = await filterNewEvents(env.BLOODINFO_EVENTS_KV, allEvents);
     console.log(`Found ${newEvents.length} new event(s)`);
 
     // Step 3: Send notification if there are new events
@@ -48,7 +47,7 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
       console.log('Step 4: Marking events as sent in KV Store...');
       for (const event of newEvents) {
         const e = event as any;
-        await markEventAsSent(env.EVENTS_KV, e.promtnSn, e.title);
+        await markEventAsSent(env.BLOODINFO_EVENTS_KV, e.promtnSn, e.title);
       }
 
       console.log(`Successfully sent ${newEvents.length} event notification(s)`);

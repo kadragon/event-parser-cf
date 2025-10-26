@@ -54,29 +54,26 @@ npm install
 
 ```bash
 # Telegram Bot Token 설정
-wrangler secret put TELEGRAM_BOT_TOKEN --env production
+wrangler secret put TELEGRAM_BOT_TOKEN
 
 # Telegram Chat ID 설정
-wrangler secret put TELEGRAM_CHAT_ID --env production
+wrangler secret put TELEGRAM_CHAT_ID
 ```
 
-### 3. KV Store 설정
+### 3. KV Store 설정 (이미 설정됨)
 
-```bash
-# 새로운 KV Store 생성
-wrangler kv:namespace create "EVENTS_KV" --env production
-
-# 프리뷰용 KV Store 생성
-wrangler kv:namespace create "EVENTS_KV" --preview --env production
-```
-
-생성된 ID를 `wrangler.toml`의 `kv_namespaces` 섹션에서 업데이트하세요:
+`wrangler.toml`에 KV Store ID가 이미 설정되어 있습니다:
 
 ```toml
 [[kv_namespaces]]
-binding = "EVENTS_KV"
-id = "YOUR_KV_ID"
-preview_id = "YOUR_PREVIEW_KV_ID"
+binding = "BLOODINFO_EVENTS_KV"
+id = "462fb1ac6a2c4ed5b53fa0006d2d61b9"
+```
+
+필요시 새로운 KV Store를 생성하려면:
+
+```bash
+wrangler kv:namespace create "BLOODINFO_EVENTS_KV"
 ```
 
 ### 4. 테스트 실행
@@ -88,8 +85,7 @@ npm test
 ### 5. 배포
 
 ```bash
-# 프로덕션 배포
-wrangler deploy --env production
+wrangler deploy
 ```
 
 ## 크론 트리거
@@ -98,13 +94,13 @@ Worker는 `wrangler.toml`에 정의된 크론 스케줄에 따라 자동 실행�
 
 ```toml
 [[triggers.crons]]
-cron = "0 15 * * *"  # 매일 15:00 UTC (KST 기준 다음날 00:00)
+cron = "0 3 * * *"  # 매일 03:00 UTC (KST 기준 12:00)
 ```
 
 ## 작동 방식
 
 ```
-1. 매일 00:00 KST 크론 트리거 실행
+1. 매일 12:00 KST 크론 트리거 실행
    ↓
 2. 3개 카테고리(mi=1301,1302,1303)에서 이벤트 수집
    ↓
@@ -211,7 +207,7 @@ wrangler kv:namespace list
 - Worker 로그 확인:
 
 ```bash
-wrangler tail --env production
+wrangler tail
 ```
 
 ### 중복 이벤트가 계속 전송됨
@@ -219,7 +215,7 @@ wrangler tail --env production
 KV Store가 제대로 설정되어 있는지 확인:
 
 ```bash
-wrangler kv:key list --namespace-id YOUR_KV_ID --env production
+wrangler kv:key list --namespace-id 462fb1ac6a2c4ed5b53fa0006d2d61b9
 ```
 
 ## 라이선스
