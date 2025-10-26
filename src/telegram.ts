@@ -1,31 +1,42 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import type { Event } from './parser';
+import type { SiteEvent } from './types/site-parser';
 
 /**
- * Build Telegram message from events
+ * Build Telegram message from events (supports both legacy Event and new SiteEvent)
  *
  * @param events - Events to notify about
  * @returns Formatted message text
  */
-function buildEventMessage(events: Event[]): string {
+function buildEventMessage(events: Array<Event | SiteEvent>): string {
   if (events.length === 0) {
     return '새로운 이벤트가 없습니다.';
   }
 
-  let message = '🩸 혈액정보 새 이벤트 안내\n\n';
+  // Group events by site
+  const eventsBySite: { [siteId: string]: Array<Event | SiteEvent> } = {};
+  for (const event of events) {
+    const siteId = (event as any).siteId || 'bloodinfo';
+    if (!eventsBySite[siteId]) {
+      eventsBySite[siteId] = [];
+    }
+    eventsBySite[siteId].push(event);
+  }
 
-  events.forEach((event, index) => {
-    message += `📌 이벤트 ${index + 1}: ${event.title}\n`;
-    message += `   기간: ${event.startDate} ~ ${event.endDate}\n`;
-    message += `   링크: https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?${event.sourceUrl}\n\n`;
-  });
+  let message = '🩸 새로운 이벤트 안내\n\n';
 
-  // Add a more direct link if single category
-  const sourceUrls = [...new Set(events.map((e) => e.sourceUrl))];
-  message += '🔗 상세보기:\n';
-  sourceUrls.forEach((url) => {
-    message += `- https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?${url}\n`;
-  });
+  for (const siteId in eventsBySite) {
+    const siteEvents = eventsBySite[siteId];
+    const siteName = (siteEvents[0] as any).siteName || siteId;
+
+    message += `<b>📍 ${siteName}</b>\n`;
+
+    siteEvents.forEach((event, index) => {
+      message += `${index + 1}. ${event.title}\n`;
+      message += `   📅 ${event.startDate} ~ ${event.endDate}\n`;
+      message += `   🔗 ${event.sourceUrl}\n\n`;
+    });
+  }
 
   return message;
 }
@@ -35,9 +46,9 @@ function buildEventMessage(events: Event[]): string {
  *
  * @param botToken - Telegram Bot API token
  * @param chatId - Telegram chat ID
- * @param events - Events to notify about
+ * @param events - Events to notify about (supports both Event and SiteEvent)
  */
-export async function sendEventNotification(botToken: string, chatId: string, events: Event[]): Promise<void> {
+export async function sendEventNotification(botToken: string, chatId: string, events: Array<Event | SiteEvent>): Promise<void> {
   const message = buildEventMessage(events);
 
   try {
@@ -58,7 +69,7 @@ export async function sendEventNotification(botToken: string, chatId: string, ev
       throw new Error(`Telegram API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { ok: boolean; description?: string };
     if (!data.ok) {
       throw new Error(`Telegram error: ${data.description}`);
     }
@@ -98,7 +109,7 @@ export async function sendErrorNotification(botToken: string, chatId: string, er
       throw new Error(`Telegram API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { ok: boolean; description?: string };
     if (!data.ok) {
       throw new Error(`Telegram error: ${data.description}`);
     }

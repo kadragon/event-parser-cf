@@ -10,12 +10,13 @@ export interface SentRecord {
  * Check if an event was previously sent
  *
  * @param kv - Cloudflare KV namespace
- * @param promtnSn - Event identifier
+ * @param siteId - Site identifier (e.g., 'bloodinfo', 'ktcu')
+ * @param eventId - Event identifier
  * @returns true if event was sent, false otherwise
  */
-export async function isEventSent(kv: KVNamespace, promtnSn: string): Promise<boolean> {
+export async function isEventSent(kv: KVNamespace, siteId: string, eventId: string): Promise<boolean> {
   try {
-    const key = `sent:${promtnSn}`;
+    const key = `sent:${siteId}:${eventId}`;
     const record = await kv.get(key);
     return record !== null;
   } catch (error) {
@@ -29,16 +30,17 @@ export async function isEventSent(kv: KVNamespace, promtnSn: string): Promise<bo
  * Mark an event as sent by storing it in KV
  *
  * @param kv - Cloudflare KV namespace
- * @param promtnSn - Event identifier
+ * @param siteId - Site identifier (e.g., 'bloodinfo', 'ktcu')
+ * @param eventId - Event identifier
  * @param title - Event title
  */
-export async function markEventAsSent(kv: KVNamespace, promtnSn: string, title: string): Promise<void> {
+export async function markEventAsSent(kv: KVNamespace, siteId: string, eventId: string, title: string): Promise<void> {
   try {
-    const key = `sent:${promtnSn}`;
+    const key = `sent:${siteId}:${eventId}`;
     const record: SentRecord = {
       sentAt: new Date().toISOString(),
       title,
-      promtnSn,
+      promtnSn: eventId,
     };
 
     // 60 days TTL (in seconds)
@@ -80,14 +82,14 @@ export async function getSentEvents(kv: KVNamespace): Promise<string[]> {
  * Filter events to only include new (unsent) ones
  *
  * @param kv - Cloudflare KV namespace
- * @param events - Events to filter
+ * @param events - Events to filter (must have siteId and eventId)
  * @returns Only new events
  */
-export async function filterNewEvents(kv: KVNamespace, events: Array<{ promtnSn: string }>): Promise<Array<{ promtnSn: string }>> {
+export async function filterNewEvents(kv: KVNamespace, events: Array<{ siteId: string; eventId: string }>): Promise<Array<{ siteId: string; eventId: string }>> {
   const newEvents = [];
 
   for (const event of events) {
-    const sent = await isEventSent(kv, event.promtnSn);
+    const sent = await isEventSent(kv, event.siteId, event.eventId);
     if (!sent) {
       newEvents.push(event);
     }
