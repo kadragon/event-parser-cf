@@ -1,5 +1,6 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { load } from 'cheerio';
+import type { SiteParser, SiteEvent } from './types/site-parser';
 
 export interface Event {
   promtnSn: string;
@@ -146,4 +147,25 @@ export async function fetchAllEvents(): Promise<Event[]> {
   }
 
   return allEvents;
+}
+
+/**
+ * BloodinfoParser - implements SiteParser interface for bloodinfo.net
+ */
+export class BloodinfoParser implements SiteParser {
+  siteId = 'bloodinfo';
+  siteName = '혈액정보';
+
+  async fetchAndParse(): Promise<SiteEvent[]> {
+    const events = await fetchAllEvents();
+    return events.map((event) => ({
+      siteId: this.siteId,
+      siteName: this.siteName,
+      eventId: event.promtnSn,
+      title: event.title,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      sourceUrl: event.sourceUrl,
+    }));
+  }
 }
