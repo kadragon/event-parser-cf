@@ -56,15 +56,29 @@
 
 ## API (Summary)
 
+### HTML Structure (Actual)
+```html
+<!-- Title Link -->
+<a href="javascript:" data-id="189889" class="promtnInfoBtn">
+  <span>대한적십자사 창립 120주년 기념 프로모션</span>
+</a>
+<!-- Date Range Link -->
+<a href="javascript:" data-id="189889" class="promtnInfoBtn">
+  <span style='font-weight:500;'>2025.10.01 ~ 2025.10.31</span>
+</a>
+```
+
 ### Telegram Message Format
 ```
 🩸 혈액정보 새 이벤트 안내
 
 📌 이벤트 1: [Title]
    기간: YYYY.MM.DD ~ YYYY.MM.DD
+   링크: https://www.bloodinfo.net/...?mi=1301
 
 📌 이벤트 2: [Title]
    기간: YYYY.MM.DD ~ YYYY.MM.DD
+   링크: https://www.bloodinfo.net/...?mi=1302
 
 🔗 상세보기:
 - https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=1301
