@@ -11,11 +11,8 @@ export interface Event {
 
 /**
  * Parse HTML from bloodinfo.net promotion list and extract events
- * Targets: <div class="promtnInfoBtn" data-id="...">
- *   <img src="...">
- *   <div>[Title]</div>
- *   <div>[YYYY.MM.DD ~ YYYY.MM.DD]</div>
- * </div>
+ * Targets: <a class="promtnInfoBtn" data-id="..."><span>Title</span>...</a>
+ *          <a class="promtnInfoBtn" data-id="..."><span>YYYY.MM.DD ~ YYYY.MM.DD</span></a>
  *
  * @param html - Raw HTML content
  * @param sourceUrl - Source identifier (e.g., 'mi=1301')
@@ -23,43 +20,64 @@ export interface Event {
  */
 export function parseEvents(html: string, sourceUrl: string): Event[] {
   const events: Event[] = [];
+  const processedIds = new Set<string>();
 
   try {
     const $ = load(html);
 
-    // Find all div elements with class "promtnInfoBtn"
-    $('div.promtnInfoBtn').each((_index, element) => {
+    // Find all <a class="promtnInfoBtn"> elements
+    const links = $('a.promtnInfoBtn');
+
+    for (let i = 0; i < links.length; i++) {
       try {
-        // Extract promtnSn from data-id attribute
-        const promtnSn = $(element).attr('data-id');
+        const $link = $(links[i]);
+        const promtnSn = $link.attr('data-id');
 
-        if (!promtnSn) {
-          return; // Skip if no promtnSn found
+        if (!promtnSn || processedIds.has(promtnSn)) {
+          continue; // Skip if no promtnSn or already processed
         }
 
-        // Extract child divs: [img], [title], [date]
-        const children = $(element).find('> div');
+        // Extract title from the span (skipping date spans which contain ~)
+        const text = $link.find('> span').text().trim();
 
-        if (children.length < 2) {
-          return; // Skip if not enough child elements
+        // Skip if this is a date range (contains ~)
+        if (text.includes('~')) {
+          continue;
         }
 
-        // Title is in the first div
-        const title = children.eq(0).text().trim();
+        const title = text;
 
-        // Date range is in the second div
-        const dateText = children.eq(1).text().trim();
+        if (!title) {
+          continue; // Skip if no title
+        }
 
-        // Validate required fields
-        if (!title || !dateText) {
-          return; // Skip this item
+        // Find the next link with the same promtnSn that contains the date
+        let dateText = '';
+        for (let j = i + 1; j < links.length; j++) {
+          const $nextLink = $(links[j]);
+          const nextId = $nextLink.attr('data-id');
+
+          if (nextId === promtnSn) {
+            const nextText = $nextLink.find('> span').text().trim();
+            // Replace &nbsp; with space and clean up
+            const cleanText = nextText.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+
+            if (cleanText.includes('~')) {
+              dateText = cleanText;
+              break;
+            }
+          }
+        }
+
+        if (!dateText) {
+          continue; // Skip if no date found
         }
 
         // Parse date range: "YYYY.MM.DD ~ YYYY.MM.DD"
         const [startDate, endDate] = dateText.split('~').map((d) => d.trim());
 
         if (!startDate || !endDate) {
-          return; // Skip if date parsing failed
+          continue; // Skip if date parsing failed
         }
 
         events.push({
@@ -69,11 +87,13 @@ export function parseEvents(html: string, sourceUrl: string): Event[] {
           endDate,
           sourceUrl,
         });
+
+        processedIds.add(promtnSn);
       } catch (error) {
         // Log and skip individual item errors
         console.error('Error parsing event item:', error);
       }
-    });
+    }
   } catch (error) {
     console.error('Error loading HTML:', error);
     throw new Error(`Failed to parse HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);

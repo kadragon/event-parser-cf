@@ -6,11 +6,8 @@ describe('HTML Parser - parseEvents()', () => {
   // TEST-AC1-NEW-EVENTS
   it('AC-1: Should extract events with promtnSn, title, and date range', () => {
     const mockHtml = `
-      <div class="promtnInfoBtn" data-id="12345">
-        <img src="image.jpg" />
-        <div>혈액 수급 지원 프로모션</div>
-        <div>2025.01.01 ~ 2025.12.31</div>
-      </div>
+      <a href="javascript:" data-id="12345" class="promtnInfoBtn"><span>혈액 수급 지원 프로모션</span></a>
+      <a href="javascript:" data-id="12345" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.12.31</span></a>
     `;
 
     const events = parseEvents(mockHtml, 'mi=1301');
@@ -27,16 +24,10 @@ describe('HTML Parser - parseEvents()', () => {
 
   it('AC-1: Should extract multiple events from single page', () => {
     const mockHtml = `
-      <div class="promtnInfoBtn" data-id="111">
-        <img src="1.jpg" />
-        <div>제목1</div>
-        <div>2025.01.01 ~ 2025.01.31</div>
-      </div>
-      <div class="promtnInfoBtn" data-id="222">
-        <img src="2.jpg" />
-        <div>제목2</div>
-        <div>2025.02.01 ~ 2025.02.28</div>
-      </div>
+      <a href="javascript:" data-id="111" class="promtnInfoBtn"><span>제목1</span></a>
+      <a href="javascript:" data-id="111" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.01.31</span></a>
+      <a href="javascript:" data-id="222" class="promtnInfoBtn"><span>제목2</span></a>
+      <a href="javascript:" data-id="222" class="promtnInfoBtn"><span>2025.02.01&nbsp;~&nbsp;2025.02.28</span></a>
     `;
 
     const events = parseEvents(mockHtml, 'mi=1302');
@@ -56,11 +47,8 @@ describe('HTML Parser - parseEvents()', () => {
 
   it('AC-1: Should parse date range correctly', () => {
     const mockHtml = `
-      <div class="promtnInfoBtn" data-id="999">
-        <img src="test.jpg" />
-        <div>Test Event</div>
-        <div>2025.06.15 ~ 2025.07.20</div>
-      </div>
+      <a href="javascript:" data-id="999" class="promtnInfoBtn"><span>Test Event</span></a>
+      <a href="javascript:" data-id="999" class="promtnInfoBtn"><span>2025.06.15&nbsp;~&nbsp;2025.07.20</span></a>
     `;
 
     const events = parseEvents(mockHtml, 'mi=1301');
@@ -69,13 +57,10 @@ describe('HTML Parser - parseEvents()', () => {
     expect(events[0].endDate).toBe('2025.07.20');
   });
 
-  it('AC-1: Should extract title from div text', () => {
+  it('AC-1: Should extract title from span text', () => {
     const mockHtml = `
-      <div class="promtnInfoBtn" data-id="555">
-        <img src="event.jpg" />
-        <div>온라인 헌혈 예약 이벤트</div>
-        <div>2025.01.01 ~ 2025.01.31</div>
-      </div>
+      <a href="javascript:" data-id="555" class="promtnInfoBtn"><span>온라인 헌혈 예약 이벤트</span></a>
+      <a href="javascript:" data-id="555" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.01.31</span></a>
     `;
 
     const events = parseEvents(mockHtml, 'mi=1301');
