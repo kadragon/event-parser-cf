@@ -103,7 +103,7 @@ describe('Event Collection - Parser Error Handling', () => {
     expect(errors1.size).toBe(0); // No errors
 
     // Case 2: All parsers fail
-    const failAll = [
+    const failAll: Promise<SiteEvent[]>[] = [
       Promise.reject(new Error('Error 1')),
       Promise.reject(new Error('Error 2')),
     ];

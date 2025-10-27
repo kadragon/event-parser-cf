@@ -106,8 +106,16 @@ describe('Telegram Integration', () => {
       text: async () => '{"ok": false, "error_code": 429}',
     });
 
-    const events = [
-      { promtnSn: '111', title: 'Test', startDate: '2025.01.01', endDate: '2025.01.31', sourceUrl: 'mi=1301' },
+    const events: SiteEvent[] = [
+      {
+        siteId: 'test',
+        siteName: '테스트',
+        eventId: '111',
+        title: 'Test',
+        startDate: '2025.01.01',
+        endDate: '2025.01.31',
+        sourceUrl: 'mi=1301',
+      },
     ];
 
     const result = await sendEventNotification('test_token', '123456', events).catch((err: Error) => err);
