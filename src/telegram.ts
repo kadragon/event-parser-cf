@@ -10,11 +10,10 @@ const TELEGRAM_CONFIG = {
 } as const;
 
 /**
- * XSS filter options: strip all tags to prevent any injection
+ * XSS filter options: escape all HTML tags to prevent any injection
  */
 const XSS_FILTER_OPTIONS = {
   whiteList: {}, // Empty whitelist: allow no HTML tags
-  stripIgnoredTag: true, // Remove unallowed tags instead of escaping
   stripLeadingAndTrailingWhitespace: false,
 } as const;
 
