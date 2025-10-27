@@ -2,12 +2,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { isEventSent, markEventAsSent } from '../src/kv';
 
-// Mock KV Store
+// Mock KV Store - cast with vi.fn() to allow mock methods
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockKV = {
   get: vi.fn(),
   put: vi.fn(),
   delete: vi.fn(),
-};
+  list: vi.fn(),
+  getWithMetadata: vi.fn(),
+} as any as KVNamespace;
 
 describe('KV Store Operations', () => {
   beforeEach(() => {
@@ -16,7 +19,7 @@ describe('KV Store Operations', () => {
 
   // TEST-AC2-DUPLICATE-CHECK
   it('AC-2: Should return true if event was previously sent', async () => {
-    mockKV.get.mockResolvedValue(JSON.stringify({ sentAt: '2025-01-01T00:00:00Z', title: 'Test Event' }));
+    (mockKV.get as any).mockResolvedValue(JSON.stringify({ sentAt: '2025-01-01T00:00:00Z', title: 'Test Event' }));
 
     const result = await isEventSent(mockKV, 'bloodinfo', '12345');
 
@@ -25,7 +28,7 @@ describe('KV Store Operations', () => {
   });
 
   it('AC-2: Should return false if event was not sent', async () => {
-    mockKV.get.mockResolvedValue(null);
+    (mockKV.get as any).mockResolvedValue(null);
 
     const result = await isEventSent(mockKV, 'bloodinfo', '99999');
 
@@ -35,7 +38,7 @@ describe('KV Store Operations', () => {
 
   it('AC-2: Should treat any value as sent (even corrupted)', async () => {
     // If KV returns anything, it means the key exists
-    mockKV.get.mockResolvedValue('invalid json');
+    (mockKV.get as any).mockResolvedValue('invalid json');
 
     const result = await isEventSent(mockKV, 'bloodinfo', '54321');
 
@@ -61,9 +64,9 @@ describe('KV Store Operations', () => {
   });
 
   it('AC-3: Should handle KV write failures gracefully', async () => {
-    mockKV.put.mockRejectedValue(new Error('KV write failed'));
+    (mockKV.put as any).mockRejectedValue(new Error('KV write failed'));
 
-    const result = await markEventAsSent(mockKV, 'bloodinfo', '222', 'Test').catch(err => err.message);
+    const result = await markEventAsSent(mockKV, 'bloodinfo', '222', 'Test').catch((err: Error) => err.message);
 
     expect(result).toBe('KV write failed');
   });

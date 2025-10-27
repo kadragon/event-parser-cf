@@ -54,15 +54,49 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
       })
     );
 
-    // Collect all events from successful parsers
+    // Collect all events from successful parsers and track errors
     const allEvents: SiteEvent[] = [];
+    const parserErrors: Array<{ parser: string; error: string }> = [];
+
     for (const result of parserResults) {
-      if (result.status === 'fulfilled' && result.value.status === 'success') {
-        allEvents.push(...result.value.events);
+      // All promises are fulfilled due to try/catch in the callback
+      if (result.status === 'fulfilled') {
+        if (result.value.status === 'success') {
+          allEvents.push(...result.value.events);
+        } else {
+          // Parser execution succeeded but returned 'failed' status
+          parserErrors.push({
+            parser: result.value.parser.siteName,
+            error: result.value.error || 'Unknown error',
+          });
+        }
       }
     }
 
     console.log(`Fetched ${allEvents.length} total events from all sites`);
+
+    // Step 2.5: Check if all parsers failed
+    if (allEvents.length === 0 && parserErrors.length === siteParserRegistry.length) {
+      // All parsers failed - aggregate errors and send alert
+      console.error(`All ${siteParserRegistry.length} parser(s) failed!`);
+
+      const errorSummary = parserErrors
+        .map((e) => `⚠️ ${e.parser}:\n${e.error}`)
+        .join('\n\n');
+
+      const message = `❌ 모든 파서 실패 (${parserErrors.length}개)\n\n${errorSummary}`;
+      console.error(message);
+
+      try {
+        await sendErrorNotification(botToken, chatId, message);
+        console.log('Sent all-parser-failure alert to Telegram');
+      } catch (telegramError) {
+        console.error('Failed to send all-parser-failure alert:', telegramError);
+      }
+
+      // Return early since there's nothing to process
+      return;
+    }
 
     // Step 2: Filter to only new events
     console.log('Step 2: Filtering new events...');
@@ -82,13 +116,30 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
 
       await sendEventNotification(botToken, chatId, eventsToSend);
 
-      // Step 4: Mark all sent events in KV Store
+      // Step 4: Mark all sent events in KV Store (parallel with error handling)
       console.log('Step 4: Marking events as sent in KV Store...');
-      for (const event of eventsToSend) {
-        await markEventAsSent(env.EVENTS_KV, event.siteId, event.eventId, event.title);
-      }
+      const markResults = await Promise.allSettled(
+        eventsToSend.map((event) => markEventAsSent(env.EVENTS_KV, event.siteId, event.eventId, event.title))
+      );
 
-      console.log(`Successfully sent ${eventsToSend.length} event notification(s)`);
+      // Log individual results
+      let successCount = 0;
+      let failureCount = 0;
+      markResults.forEach((result, idx) => {
+        const event = eventsToSend[idx];
+        if (result.status === 'fulfilled') {
+          console.log(`  ✓ Marked "${event.title}" as sent`);
+          successCount++;
+        } else {
+          console.error(`  ✗ Failed to mark "${event.title}" as sent: ${result.reason}`);
+          failureCount++;
+        }
+      });
+
+      console.log(
+        `Successfully sent ${eventsToSend.length} event notification(s) ` +
+          `(KV marked: ${successCount}, failed: ${failureCount})`
+      );
     } else {
       console.log('No new events to send - skipping notification');
     }

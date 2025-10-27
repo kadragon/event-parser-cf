@@ -79,20 +79,51 @@ export async function getSentEvents(kv: KVNamespace): Promise<string[]> {
 }
 
 /**
- * Filter events to only include new (unsent) ones
+ * Concurrency limit for parallel KV reads
+ * TRACE: SPEC-KV-PARALLEL-READS-001
+ */
+const KV_READ_CONCURRENCY = 5;
+
+/**
+ * Filter events to only include new (unsent) ones with parallel KV reads
  *
  * @param kv - Cloudflare KV namespace
  * @param events - Events to filter (must have siteId and eventId)
- * @returns Only new events
+ * @returns Only new events (in original order)
+ * TRACE: SPEC-KV-PARALLEL-READS-001
  */
 export async function filterNewEvents(kv: KVNamespace, events: Array<{ siteId: string; eventId: string }>): Promise<Array<{ siteId: string; eventId: string }>> {
-  const newEvents = [];
+  if (events.length === 0) {
+    return [];
+  }
 
-  for (const event of events) {
-    const sent = await isEventSent(kv, event.siteId, event.eventId);
-    if (!sent) {
-      newEvents.push(event);
-    }
+  const newEvents: Array<{ siteId: string; eventId: string }> = [];
+
+  // Process events in batches with concurrency limit
+  for (let i = 0; i < events.length; i += KV_READ_CONCURRENCY) {
+    const batch = events.slice(i, i + KV_READ_CONCURRENCY);
+
+    // Fetch sent status for all events in batch in parallel
+    const batchResults = await Promise.allSettled(
+      batch.map((event) => isEventSent(kv, event.siteId, event.eventId))
+    );
+
+    // Collect new events from this batch (maintaining order)
+    batchResults.forEach((result, idx) => {
+      const event = batch[idx];
+      if (result.status === 'fulfilled') {
+        if (!result.value) {
+          // Event not sent yet
+          newEvents.push(event);
+        }
+      } else {
+        // KV read failed - treat as not sent (resend)
+        console.error(
+          `Failed to check sent status for ${event.siteId}:${event.eventId}: ${result.reason}`
+        );
+        newEvents.push(event);
+      }
+    });
   }
 
   return newEvents;
