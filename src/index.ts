@@ -36,19 +36,29 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
   console.log(`[${new Date().toISOString()}] Starting event collection job`);
 
   try {
-    // Step 1: Fetch events from all registered site parsers
-    console.log(`Step 1: Fetching events from ${siteParserRegistry.length} site(s)...`);
-    const allEvents: SiteEvent[] = [];
+    // Step 1: Fetch events from all registered site parsers in parallel
+    console.log(`Step 1: Fetching events from ${siteParserRegistry.length} site(s) in parallel...`);
 
-    for (const parser of siteParserRegistry) {
-      try {
-        console.log(`  Fetching from ${parser.siteName} (${parser.siteId})...`);
-        const events = await parser.fetchAndParse();
-        console.log(`  Got ${events.length} event(s) from ${parser.siteName}`);
-        allEvents.push(...events);
-      } catch (error) {
-        console.error(`  Error fetching from ${parser.siteName}:`, error);
-        // Continue with next parser on error
+    const parserResults = await Promise.allSettled(
+      siteParserRegistry.map(async (parser) => {
+        try {
+          console.log(`  Fetching from ${parser.siteName} (${parser.siteId})...`);
+          const events = await parser.fetchAndParse();
+          console.log(`  Got ${events.length} event(s) from ${parser.siteName}`);
+          return { parser, events, status: 'success' as const };
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`  Error fetching from ${parser.siteName}: ${errorMsg}`);
+          return { parser, events: [], status: 'failed' as const, error: errorMsg };
+        }
+      })
+    );
+
+    // Collect all events from successful parsers
+    const allEvents: SiteEvent[] = [];
+    for (const result of parserResults) {
+      if (result.status === 'fulfilled' && result.value.status === 'success') {
+        allEvents.push(...result.value.events);
       }
     }
 

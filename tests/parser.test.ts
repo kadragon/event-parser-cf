@@ -10,7 +10,7 @@ describe('HTML Parser - parseEvents()', () => {
       <a href="javascript:" data-id="12345" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.12.31</span></a>
     `;
 
-    const events = parseEvents(mockHtml, 'mi=1301');
+    const events = parseEvents(mockHtml, 1301);
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
@@ -18,7 +18,7 @@ describe('HTML Parser - parseEvents()', () => {
       title: '혈액 수급 지원 프로모션',
       startDate: '2025.01.01',
       endDate: '2025.12.31',
-      sourceUrl: 'mi=1301',
+      sourceUrl: 'https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=1301',
     });
   });
 
@@ -30,7 +30,7 @@ describe('HTML Parser - parseEvents()', () => {
       <a href="javascript:" data-id="222" class="promtnInfoBtn"><span>2025.02.01&nbsp;~&nbsp;2025.02.28</span></a>
     `;
 
-    const events = parseEvents(mockHtml, 'mi=1302');
+    const events = parseEvents(mockHtml, 1302);
 
     expect(events).toHaveLength(2);
     expect(events[0].promtnSn).toBe('111');
@@ -40,7 +40,7 @@ describe('HTML Parser - parseEvents()', () => {
   it('AC-1: Should handle missing data gracefully', () => {
     const mockHtml = '<div>No events</div>';
 
-    const events = parseEvents(mockHtml, 'mi=1303');
+    const events = parseEvents(mockHtml, 1303);
 
     expect(events).toHaveLength(0);
   });
@@ -51,7 +51,7 @@ describe('HTML Parser - parseEvents()', () => {
       <a href="javascript:" data-id="999" class="promtnInfoBtn"><span>2025.06.15&nbsp;~&nbsp;2025.07.20</span></a>
     `;
 
-    const events = parseEvents(mockHtml, 'mi=1301');
+    const events = parseEvents(mockHtml, 1301);
 
     expect(events[0].startDate).toBe('2025.06.15');
     expect(events[0].endDate).toBe('2025.07.20');
@@ -63,7 +63,7 @@ describe('HTML Parser - parseEvents()', () => {
       <a href="javascript:" data-id="555" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.01.31</span></a>
     `;
 
-    const events = parseEvents(mockHtml, 'mi=1301');
+    const events = parseEvents(mockHtml, 1301);
 
     expect(events[0].title).toBe('온라인 헌혈 예약 이벤트');
   });

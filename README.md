@@ -69,7 +69,7 @@ git config core.hooksPath .githooks
 
 이제 커밋할 때마다 TypeScript 타입 체크가 자동으로 실행됩니다!
 
-### 4. Telegram Bot Token 설정
+### 3. Telegram Bot Token 설정
 
 ```bash
 # Telegram Bot Token 설정
@@ -79,7 +79,7 @@ wrangler secret put TELEGRAM_BOT_TOKEN
 wrangler secret put TELEGRAM_CHAT_ID
 ```
 
-### 5. KV Store 설정 (이미 설정됨)
+### 4. KV Store 설정 (이미 설정됨)
 
 `wrangler.toml`에 KV Store ID가 이미 설정되어 있습니다:
 
@@ -89,7 +89,7 @@ binding = "EVENTS_KV"  # 모든 사이트 이벤트를 통합 관리
 id = "462fb1ac6a2c4ed5b53fa0006d2d61b9"
 ```
 
-### 6. 개발 및 배포
+### 5. 개발 및 배포
 
 ```bash
 # 로컬 개발 서버 (http://localhost:8787)

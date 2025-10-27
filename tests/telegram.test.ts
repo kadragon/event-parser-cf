@@ -1,6 +1,7 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendEventNotification, sendErrorNotification } from '../src/telegram';
+import type { SiteEvent } from '../src/types/site-parser';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -20,9 +21,25 @@ describe('Telegram Integration', () => {
       text: async () => '{"ok": true}',
     });
 
-    const events = [
-      { promtnSn: '111', title: '이벤트 1', startDate: '2025.01.01', endDate: '2025.01.31', sourceUrl: 'mi=1301' },
-      { promtnSn: '222', title: '이벤트 2', startDate: '2025.02.01', endDate: '2025.02.28', sourceUrl: 'mi=1302' },
+    const events: SiteEvent[] = [
+      {
+        siteId: 'bloodinfo',
+        siteName: '혈액정보',
+        eventId: '111',
+        title: '이벤트 1',
+        startDate: '2025.01.01',
+        endDate: '2025.01.31',
+        sourceUrl: 'https://www.bloodinfo.net/?mi=1301',
+      },
+      {
+        siteId: 'bloodinfo',
+        siteName: '혈액정보',
+        eventId: '222',
+        title: '이벤트 2',
+        startDate: '2025.02.01',
+        endDate: '2025.02.28',
+        sourceUrl: 'https://www.bloodinfo.net/?mi=1302',
+      },
     ];
 
     await sendEventNotification('test_token', '123456', events);
@@ -44,8 +61,16 @@ describe('Telegram Integration', () => {
       text: async () => '{"ok": true}',
     });
 
-    const events = [
-      { promtnSn: '999', title: 'Test Event', startDate: '2025.01.01', endDate: '2025.01.31', sourceUrl: 'mi=1301' },
+    const events: SiteEvent[] = [
+      {
+        siteId: 'bloodinfo',
+        siteName: '혈액정보',
+        eventId: '999',
+        title: 'Test Event',
+        startDate: '2025.01.01',
+        endDate: '2025.01.31',
+        sourceUrl: 'https://www.bloodinfo.net/?mi=1301',
+      },
     ];
 
     await sendEventNotification('test_token', '123456', events);
@@ -53,7 +78,7 @@ describe('Telegram Integration', () => {
     const callArgs = mockFetch.mock.calls[0] as unknown[];
     const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
 
-    expect(body.text).toContain('mi=1301');
+    expect(body.text).toContain('https://www.bloodinfo.net/?mi=1301');
   });
 
   // TEST-AC4-ERROR-NOTIFICATION
@@ -70,7 +95,7 @@ describe('Telegram Integration', () => {
     const callArgs = mockFetch.mock.calls[0] as unknown[];
     const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
 
-    expect(body.text).toContain('에러');
+    expect(body.text).toContain('오류');
     expect(body.text).toContain('HTML parsing failed');
   });
 

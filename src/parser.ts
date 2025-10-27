@@ -16,10 +16,10 @@ export interface Event {
  *          <a class="promtnInfoBtn" data-id="..."><span>YYYY.MM.DD ~ YYYY.MM.DD</span></a>
  *
  * @param html - Raw HTML content
- * @param sourceUrl - Source identifier (e.g., 'mi=1301')
+ * @param mi - Promotion category ID (1301, 1302, 1303)
  * @returns Array of parsed events
  */
-export function parseEvents(html: string, sourceUrl: string): Event[] {
+export function parseEvents(html: string, mi: number): Event[] {
   const events: Event[] = [];
   const processedIds = new Set<string>();
 
@@ -81,12 +81,15 @@ export function parseEvents(html: string, sourceUrl: string): Event[] {
           continue; // Skip if date parsing failed
         }
 
+        // Generate full URL for the event
+        const fullSourceUrl = `https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=${mi}`;
+
         events.push({
           promtnSn,
           title,
           startDate,
           endDate,
-          sourceUrl,
+          sourceUrl: fullSourceUrl,
         });
 
         processedIds.add(promtnSn);
@@ -120,7 +123,7 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
     }
 
     const html = await response.text();
-    return parseEvents(html, `mi=${mi}`);
+    return parseEvents(html, mi);
   } catch (error) {
     console.error(`Failed to fetch/parse events from ${url}:`, error);
     throw error;
