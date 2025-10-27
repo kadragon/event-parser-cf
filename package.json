@@ -7,16 +7,15 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:run": "vitest --run",
+    "test": "vitest run",
     "build": "wrangler build",
     "lint": "eslint src tests",
     "lint:fix": "eslint src tests --fix"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "xss": "^1.0.15"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231121.0",

@@ -7,6 +7,7 @@
  */
 
 import { load } from 'cheerio';
+import xss from 'xss';
 import type { SiteParser, SiteEvent } from '../types/site-parser';
 
 export interface KtcuEvent {
@@ -45,6 +46,29 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Normalize text by removing HTML tags and cleaning whitespace
+ * Safely handles fragmented HTML tags to prevent XSS injection
+ *
+ * TRACE: SPEC-KTCU-PARSER-001 (Security fix for CodeQL incomplete sanitization)
+ * @param text - Text possibly containing HTML
+ * @returns Normalized text safe from XSS
+ */
+function normalizeText(text: string): string {
+  // Use xss library to sanitize and remove all tags
+  // whiteList: {} - no tags allowed (removes all HTML)
+  // stripIgnoreTag: true - removes ignored tags instead of escaping
+  // allowCommentTag: false - removes HTML comments
+  const sanitized = xss(text, {
+    whiteList: {}, // No tags allowed
+    stripIgnoreTag: true,
+    allowCommentTag: false,
+  });
+
+  // Normalize multiple spaces to single space
+  return sanitized.replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -108,20 +132,6 @@ function isEventOngoing(endDateStr: string): boolean {
 }
 
 /**
- * Normalize whitespace in text (remove HTML tags and normalize spaces)
- *
- * @param text - Raw text with potential HTML
- * @returns Normalized text
- */
-function normalizeText(text: string): string {
-  return text
-    .replace(/<br\s*\/?>/gi, ' ') // Replace <br> tags with space
-    .replace(/<[^>]+>/g, '') // Remove other HTML tags
-    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
-    .trim();
-}
-
-/**
  * Parse HTML from KTCU site and extract ongoing events
  *
  * TRACE: SPEC-KTCU-PARSER-001
@@ -152,9 +162,10 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
 
         // AC-2: Extract title from <strong class="tit">
         const titleElement = $el.find(KTCU_CONFIG.TITLE_SELECTOR);
-        // Use html() and parse to handle <br> tags properly
-        const titleHtml = titleElement.html() || '';
-        const title = normalizeText(titleHtml);
+        const rawTitle = titleElement.html() || '';
+        // Replace <br> tags with spaces for proper formatting
+        const titleWithSpaces = rawTitle.replace(/<br\s*\/?>/gi, ' ');
+        const title = normalizeText(titleWithSpaces);
 
         // AC-3: Extract and parse date range from <p class="date">
         const dateElement = $el.find(KTCU_CONFIG.DATE_SELECTOR);
