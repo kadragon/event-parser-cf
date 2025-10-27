@@ -1,6 +1,6 @@
 name = "event-parser-cf"
-type = "service"
 main = "src/index.ts"
+workers_dev = false
 compatibility_date = "2024-10-26"
 
 # KV Store Binding - unified for all sites
@@ -13,8 +13,8 @@ id = "462fb1ac6a2c4ed5b53fa0006d2d61b9"
 # wrangler secret put TELEGRAM_CHAT_ID
 
 # Cron Trigger - Daily at 12:00 KST (03:00 UTC)
-[[triggers.crons]]
-cron = "0 3 * * *"
+[triggers]
+crons = [ "0 3 * * *"]
 
-# Build Configuration is auto-detected by Wrangler 4
-# No custom build command needed - Wrangler handles TypeScript compilation
+[placement]
+mode = "smart"
