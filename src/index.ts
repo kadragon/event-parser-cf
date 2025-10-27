@@ -1,11 +1,13 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 
-import { fetchAllEvents } from './parser';
+import { BloodinfoParser } from './parser';
+import { KtcuParser } from './parsers/ktcu';
 import { filterNewEvents, markEventAsSent } from './kv';
 import { sendEventNotification, sendErrorNotification } from './telegram';
+import type { SiteParser, SiteEvent } from './types/site-parser';
 
 interface Env {
-  BLOODINFO_EVENTS_KV: KVNamespace;
+  EVENTS_KV: KVNamespace;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
 }
@@ -15,8 +17,17 @@ interface ScheduledEvent {
 }
 
 /**
+ * Site parser registry - add new parsers here
+ * TRACE: SPEC-KTCU-PARSER-001
+ */
+const siteParserRegistry: SiteParser[] = [
+  new BloodinfoParser(),
+  new KtcuParser(),
+];
+
+/**
  * Main worker handler for scheduled events (cron)
- * Fetches events, filters new ones, and sends Telegram notification
+ * Fetches events from all configured sites, filters new ones, and sends Telegram notification
  */
 async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
   const botToken = env.TELEGRAM_BOT_TOKEN;
@@ -25,32 +36,59 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
   console.log(`[${new Date().toISOString()}] Starting event collection job`);
 
   try {
-    // Step 1: Fetch all events from all three categories
-    console.log('Step 1: Fetching events from bloodinfo.net...');
-    const allEvents = await fetchAllEvents();
-    console.log(`Fetched ${allEvents.length} total events`);
+    // Step 1: Fetch events from all registered site parsers in parallel
+    console.log(`Step 1: Fetching events from ${siteParserRegistry.length} site(s) in parallel...`);
+
+    const parserResults = await Promise.allSettled(
+      siteParserRegistry.map(async (parser) => {
+        try {
+          console.log(`  Fetching from ${parser.siteName} (${parser.siteId})...`);
+          const events = await parser.fetchAndParse();
+          console.log(`  Got ${events.length} event(s) from ${parser.siteName}`);
+          return { parser, events, status: 'success' as const };
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`  Error fetching from ${parser.siteName}: ${errorMsg}`);
+          return { parser, events: [], status: 'failed' as const, error: errorMsg };
+        }
+      })
+    );
+
+    // Collect all events from successful parsers
+    const allEvents: SiteEvent[] = [];
+    for (const result of parserResults) {
+      if (result.status === 'fulfilled' && result.value.status === 'success') {
+        allEvents.push(...result.value.events);
+      }
+    }
+
+    console.log(`Fetched ${allEvents.length} total events from all sites`);
 
     // Step 2: Filter to only new events
     console.log('Step 2: Filtering new events...');
-    const newEvents = await filterNewEvents(env.BLOODINFO_EVENTS_KV, allEvents);
+    const newEvents = await filterNewEvents(
+      env.EVENTS_KV,
+      allEvents.map((e) => ({ siteId: e.siteId, eventId: e.eventId }))
+    );
     console.log(`Found ${newEvents.length} new event(s)`);
 
     // Step 3: Send notification if there are new events
     if (newEvents.length > 0) {
       console.log('Step 3: Sending Telegram notification...');
 
-      // Cast to Event type for Telegram module
-      const eventsForTelegram = newEvents as any[];
-      await sendEventNotification(botToken, chatId, eventsForTelegram);
+      // Get full event details for events marked as new
+      const newEventIds = new Set(newEvents.map((e) => `${e.siteId}:${e.eventId}`));
+      const eventsToSend = allEvents.filter((e) => newEventIds.has(`${e.siteId}:${e.eventId}`));
+
+      await sendEventNotification(botToken, chatId, eventsToSend);
 
       // Step 4: Mark all sent events in KV Store
       console.log('Step 4: Marking events as sent in KV Store...');
-      for (const event of newEvents) {
-        const e = event as any;
-        await markEventAsSent(env.BLOODINFO_EVENTS_KV, e.promtnSn, e.title);
+      for (const event of eventsToSend) {
+        await markEventAsSent(env.EVENTS_KV, event.siteId, event.eventId, event.title);
       }
 
-      console.log(`Successfully sent ${newEvents.length} event notification(s)`);
+      console.log(`Successfully sent ${eventsToSend.length} event notification(s)`);
     } else {
       console.log('No new events to send - skipping notification');
     }
