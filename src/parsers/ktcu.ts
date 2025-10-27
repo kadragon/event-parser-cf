@@ -18,6 +18,36 @@ export interface KtcuEvent {
 }
 
 /**
+ * KTCU Parser Configuration
+ */
+const KTCU_CONFIG = {
+  SITE_URL: 'https://www.ktcu.or.kr/PPW-WFA-100101',
+  EVENT_CLASS: 'box-event',
+  TITLE_SELECTOR: 'strong.tit',
+  DATE_SELECTOR: 'p.date',
+  FETCH_TIMEOUT_MS: 10000, // 10 seconds
+} as const;
+
+/**
+ * Fetch with timeout support
+ *
+ * @param url - URL to fetch
+ * @param timeoutMs - Timeout in milliseconds
+ * @returns Response promise
+ * @throws Error if fetch times out or fails
+ */
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
  * Extract event ID from onclick attribute
  * Format: fn_viewEvent('eventId')
  *
@@ -106,7 +136,7 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
     const $ = load(html);
 
     // Find all event boxes: div.box-event
-    const eventElements = $('div.box-event');
+    const eventElements = $(`.${KTCU_CONFIG.EVENT_CLASS}`);
 
     eventElements.each((index, element) => {
       try {
@@ -121,13 +151,13 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
         }
 
         // AC-2: Extract title from <strong class="tit">
-        const titleElement = $el.find('strong.tit');
+        const titleElement = $el.find(KTCU_CONFIG.TITLE_SELECTOR);
         // Use html() and parse to handle <br> tags properly
         const titleHtml = titleElement.html() || '';
         const title = normalizeText(titleHtml);
 
         // AC-3: Extract and parse date range from <p class="date">
-        const dateElement = $el.find('p.date');
+        const dateElement = $el.find(KTCU_CONFIG.DATE_SELECTOR);
         const dateRangeText = dateElement.text();
 
         if (!title || !dateRangeText) {
@@ -145,7 +175,7 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
         }
 
         // AC-6: Generate sourceUrl
-        const sourceUrl = `https://www.ktcu.or.kr/PPW-WFA-100101#${eventId}`;
+        const sourceUrl = `${KTCU_CONFIG.SITE_URL}#${eventId}`;
 
         events.push({
           eventId,
@@ -172,23 +202,24 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
  *
  * TRACE: SPEC-KTCU-PARSER-001, AC-7
  * @returns Promise resolving to array of parsed ongoing events
- * @throws Error if fetch fails or HTML parsing fails
+ * @throws Error if fetch fails (including timeout) or HTML parsing fails
  */
 export async function fetchAndParseKtcuEvents(): Promise<KtcuEvent[]> {
-  const url = 'https://www.ktcu.or.kr/PPW-WFA-100101';
-
   try {
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(KTCU_CONFIG.SITE_URL, KTCU_CONFIG.FETCH_TIMEOUT_MS);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        `HTTP ${response.status}: ${response.statusText} when fetching from ${KTCU_CONFIG.SITE_URL}`
+      );
     }
 
     const html = await response.text();
     return parseKtcuEvents(html);
   } catch (error) {
-    console.error(`Failed to fetch/parse events from KTCU:`, error);
-    throw error;
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`Failed to fetch/parse events from KTCU: ${errorMsg}`);
+    throw new Error(`KTCU event collection failed: ${errorMsg}`);
   }
 }
 
