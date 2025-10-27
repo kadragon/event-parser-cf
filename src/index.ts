@@ -59,6 +59,7 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
     const parserErrors: Array<{ parser: string; error: string }> = [];
 
     for (const result of parserResults) {
+      // All promises are fulfilled due to try/catch in the callback
       if (result.status === 'fulfilled') {
         if (result.value.status === 'success') {
           allEvents.push(...result.value.events);
@@ -69,13 +70,6 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
             error: result.value.error || 'Unknown error',
           });
         }
-      } else {
-        // Promise was rejected
-        const parser = siteParserRegistry[parserResults.indexOf(result)];
-        parserErrors.push({
-          parser: parser?.siteName || 'Unknown',
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-        });
       }
     }
 
