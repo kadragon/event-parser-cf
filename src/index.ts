@@ -122,13 +122,30 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
 
       await sendEventNotification(botToken, chatId, eventsToSend);
 
-      // Step 4: Mark all sent events in KV Store
+      // Step 4: Mark all sent events in KV Store (parallel with error handling)
       console.log('Step 4: Marking events as sent in KV Store...');
-      for (const event of eventsToSend) {
-        await markEventAsSent(env.EVENTS_KV, event.siteId, event.eventId, event.title);
-      }
+      const markResults = await Promise.allSettled(
+        eventsToSend.map((event) => markEventAsSent(env.EVENTS_KV, event.siteId, event.eventId, event.title))
+      );
 
-      console.log(`Successfully sent ${eventsToSend.length} event notification(s)`);
+      // Log individual results
+      let successCount = 0;
+      let failureCount = 0;
+      markResults.forEach((result, idx) => {
+        const event = eventsToSend[idx];
+        if (result.status === 'fulfilled') {
+          console.log(`  ✓ Marked "${event.title}" as sent`);
+          successCount++;
+        } else {
+          console.error(`  ✗ Failed to mark "${event.title}" as sent: ${result.reason}`);
+          failureCount++;
+        }
+      });
+
+      console.log(
+        `Successfully sent ${eventsToSend.length} event notification(s) ` +
+          `(KV marked: ${successCount}, failed: ${failureCount})`
+      );
     } else {
       console.log('No new events to send - skipping notification');
     }
