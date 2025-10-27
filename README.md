@@ -44,7 +44,7 @@ bloodinfo-event-parser-cf/
 ├── wrangler.toml                   # Cloudflare Workers 설정
 ├── tsconfig.json                   # TypeScript 설정
 ├── package.json                    # NPM 설정
-├── ARCHITECTURE.md                 # 아키텍처 설명서
+├── .agents/architecture.md         # 아키텍처 설명서
 ├── DEVELOPMENT.md                  # 개발 가이드 및 pre-commit hook 설명
 └── README.md                       # 이 파일
 ```
@@ -256,7 +256,7 @@ const siteParserRegistry: SiteParser[] = [
 ];
 ```
 
-자세한 내용은 [ARCHITECTURE.md](ARCHITECTURE.md) 참조
+자세한 내용은 [.agents/architecture.md](.agents/architecture.md) 참조
 
 ## 개발 가이드
 
@@ -275,7 +275,7 @@ git commit  # TypeScript 타입 체크 자동 실행
 
 이 프로젝트는 Spec-Driven Development 원칙을 따릅니다:
 
-- 아키텍처 설계는 [ARCHITECTURE.md](ARCHITECTURE.md)에 기록
+- 아키텍처 설계는 [.agents/architecture.md](.agents/architecture.md)에 기록
 - Test-Driven Development (TDD) 방식으로 구현
 - 모든 코드는 추적 가능한 구조로 작성
 - 변경 사항은 커밋 메시지와 문서로 추적
