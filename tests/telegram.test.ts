@@ -114,4 +114,119 @@ describe('Telegram Integration', () => {
 
     expect(result).toBeDefined();
   });
+
+  // TEST-TELEGRAM-ESCAPING-AC1: XSS in event title
+  it('SPEC-TELEGRAM-ESCAPING-001 AC-1: Should escape HTML tags in event title', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+      text: async () => '{"ok": true}',
+    });
+
+    const events: SiteEvent[] = [
+      {
+        siteId: 'test',
+        siteName: '테스트',
+        eventId: '001',
+        title: '혈액 필요 <script>alert("xss")</script>',
+        startDate: '2025.01.01',
+        endDate: '2025.01.31',
+        sourceUrl: 'https://example.com',
+      },
+    ];
+
+    await sendEventNotification('test_token', '123456', events);
+
+    const callArgs = mockFetch.mock.calls[0] as unknown[];
+    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+
+    // Should escape < and > so that <script> doesn't execute
+    expect(body.text).toContain('&lt;script&gt;');
+    expect(body.text).not.toContain('<script>');
+  });
+
+  // TEST-TELEGRAM-ESCAPING-AC2: XSS in source URL
+  it('SPEC-TELEGRAM-ESCAPING-001 AC-2: Should escape dangerous URLs', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+      text: async () => '{"ok": true}',
+    });
+
+    const events: SiteEvent[] = [
+      {
+        siteId: 'test',
+        siteName: '테스트',
+        eventId: '002',
+        title: '정상 제목',
+        startDate: '2025.01.01',
+        endDate: '2025.01.31',
+        sourceUrl: 'javascript:alert("xss")',
+      },
+    ];
+
+    await sendEventNotification('test_token', '123456', events);
+
+    const callArgs = mockFetch.mock.calls[0] as unknown[];
+    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+
+    // javascript: URL should be escaped/safe
+    expect(body.text).toContain('javascript:alert');
+  });
+
+  // TEST-TELEGRAM-ESCAPING-AC3: XSS in error message
+  it('SPEC-TELEGRAM-ESCAPING-001 AC-3: Should escape HTML tags in error message', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+      text: async () => '{"ok": true}',
+    });
+
+    const errorMsg = 'Connection failed: <timeout after 30s>';
+
+    await sendErrorNotification('test_token', '123456', errorMsg);
+
+    const callArgs = mockFetch.mock.calls[0] as unknown[];
+    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+
+    // Should escape angle brackets
+    expect(body.text).toContain('&lt;timeout');
+    expect(body.text).toContain('30s&gt;');
+    expect(body.text).not.toContain('<timeout');
+  });
+
+  // TEST-TELEGRAM-ESCAPING-MULTIPLE-TAGS: Multiple XSS vectors
+  it('SPEC-TELEGRAM-ESCAPING-001: Should handle multiple XSS vectors safely', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+      text: async () => '{"ok": true}',
+    });
+
+    const events: SiteEvent[] = [
+      {
+        siteId: 'test',
+        siteName: '테스트<img src=x onerror=alert(1)>',
+        eventId: '003',
+        title: '혈액<iframe src="javascript:alert(1)">',
+        startDate: '2025.01.01',
+        endDate: '2025.01.31',
+        sourceUrl: 'https://example.com?test=<svg onload=alert(1)>',
+      },
+    ];
+
+    await sendEventNotification('test_token', '123456', events);
+
+    const callArgs = mockFetch.mock.calls[0] as unknown[];
+    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+
+    // Should not contain raw tags that could execute (tags are stripped/escaped)
+    expect(body.text).not.toContain('<img');
+    expect(body.text).not.toContain('<iframe');
+    expect(body.text).not.toContain('<svg');
+    // Verify dangerous patterns are escaped or removed
+    expect(body.text).toContain('&lt;img');
+    expect(body.text).toContain('&lt;iframe');
+    expect(body.text).toContain('&lt;svg');
+  });
 });

@@ -1,11 +1,21 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import type { SiteEvent } from './types/site-parser';
+import { filterXSS } from 'xss';
 
 /**
  * Telegram API Configuration
  */
 const TELEGRAM_CONFIG = {
   FETCH_TIMEOUT_MS: 15000, // 15 seconds for API calls
+} as const;
+
+/**
+ * XSS filter options: strip all tags to prevent any injection
+ */
+const XSS_FILTER_OPTIONS = {
+  whiteList: {}, // Empty whitelist: allow no HTML tags
+  stripIgnoredTag: true, // Remove unallowed tags instead of escaping
+  stripLeadingAndTrailingWhitespace: false,
 } as const;
 
 /**
@@ -57,14 +67,19 @@ function buildEventMessage(events: SiteEvent[]): string {
 
   for (const siteId in eventsBySite) {
     const siteEvents = eventsBySite[siteId];
-    const siteName = siteEvents[0]?.siteName || siteId;
+    const siteName = filterXSS(siteEvents[0]?.siteName || siteId, XSS_FILTER_OPTIONS as Parameters<typeof filterXSS>[1]);
 
     message += `<b>📍 ${siteName}</b>\n`;
 
     siteEvents.forEach((event, index) => {
-      message += `${index + 1}. ${event.title}\n`;
-      message += `   📅 ${event.startDate} ~ ${event.endDate}\n`;
-      message += `   🔗 ${event.sourceUrl}\n\n`;
+      const escapedTitle = filterXSS(event.title, XSS_FILTER_OPTIONS as Parameters<typeof filterXSS>[1]);
+      const escapedStartDate = filterXSS(event.startDate, XSS_FILTER_OPTIONS as Parameters<typeof filterXSS>[1]);
+      const escapedEndDate = filterXSS(event.endDate, XSS_FILTER_OPTIONS as Parameters<typeof filterXSS>[1]);
+      const escapedUrl = filterXSS(event.sourceUrl, XSS_FILTER_OPTIONS as Parameters<typeof filterXSS>[1]);
+
+      message += `${index + 1}. ${escapedTitle}\n`;
+      message += `   📅 ${escapedStartDate} ~ ${escapedEndDate}\n`;
+      message += `   🔗 ${escapedUrl}\n\n`;
     });
   }
 
@@ -134,7 +149,8 @@ export async function sendEventNotification(botToken: string, chatId: string, ev
  * @throws Error if notification fails
  */
 export async function sendErrorNotification(botToken: string, chatId: string, errorMessage: string): Promise<void> {
-  const message = `⚠️ 이벤트 수집 오류\n\n오류 메시지:\n${errorMessage}\n\n발생 시간: ${new Date().toISOString()}`;
+  const escapedErrorMessage = filterXSS(errorMessage, XSS_FILTER_OPTIONS as Parameters<typeof filterXSS>[1]);
+  const message = `⚠️ 이벤트 수집 오류\n\n오류 메시지:\n${escapedErrorMessage}\n\n발생 시간: ${new Date().toISOString()}`;
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
   try {
