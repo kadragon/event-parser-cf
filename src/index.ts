@@ -54,15 +54,55 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
       })
     );
 
-    // Collect all events from successful parsers
+    // Collect all events from successful parsers and track errors
     const allEvents: SiteEvent[] = [];
+    const parserErrors: Array<{ parser: string; error: string }> = [];
+
     for (const result of parserResults) {
-      if (result.status === 'fulfilled' && result.value.status === 'success') {
-        allEvents.push(...result.value.events);
+      if (result.status === 'fulfilled') {
+        if (result.value.status === 'success') {
+          allEvents.push(...result.value.events);
+        } else {
+          // Parser execution succeeded but returned 'failed' status
+          parserErrors.push({
+            parser: result.value.parser.siteName,
+            error: result.value.error || 'Unknown error',
+          });
+        }
+      } else {
+        // Promise was rejected
+        const parser = siteParserRegistry[parserResults.indexOf(result)];
+        parserErrors.push({
+          parser: parser?.siteName || 'Unknown',
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        });
       }
     }
 
     console.log(`Fetched ${allEvents.length} total events from all sites`);
+
+    // Step 2.5: Check if all parsers failed
+    if (allEvents.length === 0 && parserErrors.length === siteParserRegistry.length) {
+      // All parsers failed - aggregate errors and send alert
+      console.error(`All ${siteParserRegistry.length} parser(s) failed!`);
+
+      const errorSummary = parserErrors
+        .map((e) => `⚠️ ${e.parser}:\n${e.error}`)
+        .join('\n\n');
+
+      const message = `❌ 모든 파서 실패 (${parserErrors.length}개)\n\n${errorSummary}`;
+      console.error(message);
+
+      try {
+        await sendErrorNotification(botToken, chatId, message);
+        console.log('Sent all-parser-failure alert to Telegram');
+      } catch (telegramError) {
+        console.error('Failed to send all-parser-failure alert:', telegramError);
+      }
+
+      // Return early since there's nothing to process
+      return;
+    }
 
     // Step 2: Filter to only new events
     console.log('Step 2: Filtering new events...');
