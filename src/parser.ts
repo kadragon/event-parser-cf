@@ -117,7 +117,7 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
   const url = `https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=${mi}`;
 
   try {
-    const ua = new UserAgent();
+    const ua = new UserAgent({ deviceCategory: 'desktop' });
     const response = await fetch(url, {
       headers: {
         'User-Agent': ua.toString(),
