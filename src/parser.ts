@@ -1,5 +1,6 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { load } from 'cheerio';
+import UserAgent from 'user-agents';
 import type { SiteParser, SiteEvent } from './types/site-parser';
 
 export interface Event {
@@ -116,7 +117,16 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
   const url = `https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=${mi}`;
 
   try {
-    const response = await fetch(url);
+    const ua = new UserAgent();
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': ua.toString(),
+        'Referer': 'https://www.bloodinfo.net/',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'Cache-Control': 'no-cache',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
