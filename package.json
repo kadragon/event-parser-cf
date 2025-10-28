@@ -15,14 +15,12 @@
   "dependencies": {
     "cheerio": "^1.1.2",
     "node-fetch": "^3.3.2",
-    "user-agents": "^1.1.669",
     "xss": "^1.0.15"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251014.0",
     "@eslint/js": "^9.38.0",
     "@types/node": "^24.9.1",
-    "@types/user-agents": "^1.0.4",
     "eslint": "^9.38.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",

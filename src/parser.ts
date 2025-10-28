@@ -1,6 +1,6 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { load } from 'cheerio';
-import UserAgent from 'user-agents';
+import { getRandomUserAgent } from './utils/user-agent';
 import type { SiteParser, SiteEvent } from './types/site-parser';
 
 export interface Event {
@@ -117,10 +117,9 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
   const url = `https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=${mi}`;
 
   try {
-    const ua = new UserAgent({ deviceCategory: 'desktop' });
     const response = await fetch(url, {
       headers: {
-        'User-Agent': ua.toString(),
+        'User-Agent': getRandomUserAgent(),
         'Referer': 'https://www.bloodinfo.net/',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9',
