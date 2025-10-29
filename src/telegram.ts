@@ -1,4 +1,5 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
+// Trace: SPEC-TELEGRAM-LENGTH-001
 import type { SiteEvent } from './types/site-parser';
 import { filterXSS } from 'xss';
 
@@ -7,6 +8,8 @@ import { filterXSS } from 'xss';
  */
 const TELEGRAM_CONFIG = {
   FETCH_TIMEOUT_MS: 15000, // 15 seconds for API calls
+  MAX_MESSAGE_LENGTH: 4096, // Telegram's message length limit
+  SAFE_TRUNCATE_LENGTH: 4000, // Truncate to this length to leave room for "..."
 } as const;
 
 /**
@@ -44,13 +47,13 @@ async function fetchWithTimeout(
 /**
  * Build Telegram message from events
  *
- * TRACE: SPEC-EVENT-COLLECTOR-001
+ * TRACE: SPEC-EVENT-COLLECTOR-001, SPEC-TELEGRAM-LENGTH-001
  * @param events - SiteEvents to notify about
- * @returns Formatted message text
+ * @returns Object with message text (max 4096 chars) and truncation flag
  */
-function buildEventMessage(events: SiteEvent[]): string {
+function buildEventMessage(events: SiteEvent[]): { text: string; isTruncated: boolean } {
   if (events.length === 0) {
-    return '새로운 이벤트가 없습니다.';
+    return { text: '새로운 이벤트가 없습니다.', isTruncated: false };
   }
 
   // Group events by site
@@ -82,21 +85,52 @@ function buildEventMessage(events: SiteEvent[]): string {
     });
   }
 
-  return message;
+  // SPEC-TELEGRAM-LENGTH-001: Truncate if message exceeds Telegram's limit
+  // AC-2 & AC-4: Strip HTML to prevent parse errors when truncated
+  if (message.length > TELEGRAM_CONFIG.MAX_MESSAGE_LENGTH) {
+    // Remove HTML tags and decode entities for safe plain-text truncation
+    // Strategy: Decode entities first (except &amp;), then remove all tags, then decode &amp;
+    // IMPORTANT: Decode &amp; LAST to prevent double-unescaping (CodeQL security issue)
+    const plainMessage = message
+      .replace(/&lt;/g, '<')  // Decode HTML entities first (so tags become recognizable)
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/<[^>]+>/g, '') // Remove all HTML tags (future-proof for <i>, <u>, <code>, etc.)
+      .replace(/&amp;/g, '&'); // MUST be last to prevent double-unescaping
+
+    return {
+      text: plainMessage.substring(0, TELEGRAM_CONFIG.SAFE_TRUNCATE_LENGTH) + '...',
+      isTruncated: true,
+    };
+  }
+
+  return { text: message, isTruncated: false };
 }
 
 /**
  * Send notification about new events to Telegram
  *
- * TRACE: SPEC-EVENT-COLLECTOR-001
+ * TRACE: SPEC-EVENT-COLLECTOR-001, SPEC-TELEGRAM-LENGTH-001
  * @param botToken - Telegram Bot API token
  * @param chatId - Telegram chat ID
  * @param events - SiteEvents to notify about
  * @throws Error if notification fails
  */
 export async function sendEventNotification(botToken: string, chatId: string, events: SiteEvent[]): Promise<void> {
-  const message = buildEventMessage(events);
+  const { text, isTruncated } = buildEventMessage(events);
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+  // AC-4: Use plain text mode for truncated messages to avoid HTML parse errors
+  const requestBody: { chat_id: string; text: string; parse_mode?: string } = {
+    chat_id: chatId,
+    text: text,
+  };
+
+  // Only set parse_mode for non-truncated messages to preserve HTML formatting
+  if (!isTruncated) {
+    requestBody.parse_mode = 'HTML';
+  }
 
   try {
     const response = await fetchWithTimeout(
@@ -106,11 +140,7 @@ export async function sendEventNotification(botToken: string, chatId: string, ev
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: message,
-          parse_mode: 'HTML',
-        }),
+        body: JSON.stringify(requestBody),
       },
       TELEGRAM_CONFIG.FETCH_TIMEOUT_MS
     );
