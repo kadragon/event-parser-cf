@@ -89,15 +89,24 @@ function buildEventMessage(events: SiteEvent[]): { text: string; isTruncated: bo
   // AC-2 & AC-4: Strip HTML to prevent parse errors when truncated
   if (message.length > TELEGRAM_CONFIG.MAX_MESSAGE_LENGTH) {
     // Remove HTML tags and decode entities for safe plain-text truncation
-    // Strategy: Decode entities first (except &amp;), then remove all tags, then decode &amp;
+    // Strategy: Decode entities first (except &amp;), then remove all tags iteratively, then decode &amp;
     // IMPORTANT: Decode &amp; LAST to prevent double-unescaping (CodeQL security issue)
-    const plainMessage = message
+    // SECURITY: Repeat tag removal to handle nested/encoded tags (CodeQL: Incomplete multi-character sanitization)
+    let plainMessage = message
       .replace(/&lt;/g, '<')  // Decode HTML entities first (so tags become recognizable)
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/&#x27;/g, "'")
-      .replace(/<[^>]+>/g, '') // Remove all HTML tags (future-proof for <i>, <u>, <code>, etc.)
-      .replace(/&amp;/g, '&'); // MUST be last to prevent double-unescaping
+      .replace(/&#x27;/g, "'");
+
+    // Remove all HTML tags iteratively until no more tags remain (prevents nested tag attacks)
+    let previous;
+    do {
+      previous = plainMessage;
+      plainMessage = plainMessage.replace(/<[^>]+>/g, '');
+    } while (plainMessage !== previous);
+
+    // MUST be last to prevent double-unescaping
+    plainMessage = plainMessage.replace(/&amp;/g, '&');
 
     return {
       text: plainMessage.substring(0, TELEGRAM_CONFIG.SAFE_TRUNCATE_LENGTH) + '...',
