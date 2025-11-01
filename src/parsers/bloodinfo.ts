@@ -2,9 +2,10 @@
 import { load } from 'cheerio';
 import { getRandomUserAgent } from '../utils/user-agent';
 import type { SiteParser, SiteEvent } from '../types/site-parser';
+import { CONFIG } from '../config';
 
 export interface Event {
-  promtnSn: string;
+  eventId: string;
   title: string;
   startDate: string;
   endDate: string;
@@ -27,20 +28,20 @@ export function parseEvents(html: string, mi: number): Event[] {
   try {
     const $ = load(html);
 
-    // Find all <a class="promtnInfoBtn"> elements
-    const links = $('a.promtnInfoBtn');
+    // Find all event links
+    const links = $(CONFIG.bloodinfo.selectors.eventLink);
 
     for (let i = 0; i < links.length; i++) {
       try {
         const $link = $(links[i]);
-        const promtnSn = $link.attr('data-id');
+        const eventId = $link.attr('data-id');
 
-        if (!promtnSn || processedIds.has(promtnSn)) {
-          continue; // Skip if no promtnSn or already processed
+        if (!eventId || processedIds.has(eventId)) {
+          continue; // Skip if no eventId or already processed
         }
 
         // Extract title from the span (skipping date spans which contain ~)
-        const text = $link.find('> span').text().trim();
+        const text = $link.find(CONFIG.bloodinfo.selectors.span).text().trim();
 
         // Skip if this is a date range (contains ~)
         if (text.includes('~')) {
@@ -53,14 +54,14 @@ export function parseEvents(html: string, mi: number): Event[] {
           continue; // Skip if no title
         }
 
-        // Find the next link with the same promtnSn that contains the date
+        // Find the next link with the same eventId that contains the date
         let dateText = '';
         for (let j = i + 1; j < links.length; j++) {
           const $nextLink = $(links[j]);
           const nextId = $nextLink.attr('data-id');
 
-          if (nextId === promtnSn) {
-            const nextText = $nextLink.find('> span').text().trim();
+          if (nextId === eventId) {
+            const nextText = $nextLink.find(CONFIG.bloodinfo.selectors.span).text().trim();
             // Replace &nbsp; with space and clean up
             const cleanText = nextText.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
 
@@ -83,17 +84,17 @@ export function parseEvents(html: string, mi: number): Event[] {
         }
 
         // Generate full URL for the event
-        const fullSourceUrl = `https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=${mi}`;
+        const fullSourceUrl = `${CONFIG.bloodinfo.baseUrl}${CONFIG.bloodinfo.urlPath}?type=${CONFIG.bloodinfo.queryParams.type}&mi=${mi}`;
 
         events.push({
-          promtnSn,
+          eventId,
           title,
           startDate,
           endDate,
           sourceUrl: fullSourceUrl,
         });
 
-        processedIds.add(promtnSn);
+        processedIds.add(eventId);
       } catch (error) {
         // Log and skip individual item errors
         console.error('Error parsing event item:', error);
@@ -114,13 +115,13 @@ export function parseEvents(html: string, mi: number): Event[] {
  * @returns Array of parsed events
  */
 export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
-  const url = `https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=${mi}`;
+  const url = `${CONFIG.bloodinfo.baseUrl}${CONFIG.bloodinfo.urlPath}?type=${CONFIG.bloodinfo.queryParams.type}&mi=${mi}`;
 
   try {
     const response = await fetch(url, {
       headers: {
         'User-Agent': getRandomUserAgent(),
-        'Referer': 'https://www.bloodinfo.net/',
+        'Referer': `${CONFIG.bloodinfo.baseUrl}/`,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9',
         'Cache-Control': 'no-cache',
@@ -141,14 +142,14 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
 
 /**
  * Fetch events from all promotion categories (excluding 1302)
- * Deduplicates events by promtnSn across categories
+ * Deduplicates events by eventId across categories
  *
  * @returns Combined array of all unique events from all categories
  */
 export async function fetchAllEvents(): Promise<Event[]> {
   // GENERATED FROM SPEC-bloodinfo-filter-001
-  // Exclude mi=1302 as per requirement
-  const miValues = [1301, 1303];
+  // Use categories from config (excludes 1302 as per requirement)
+  const miValues = CONFIG.bloodinfo.categories;
   const allEvents: Event[] = [];
 
   for (const mi of miValues) {
@@ -161,14 +162,14 @@ export async function fetchAllEvents(): Promise<Event[]> {
     }
   }
 
-  // Deduplicate by promtnSn (keep first occurrence)
+  // Deduplicate by eventId (keep first occurrence)
   const seen = new Set<string>();
   const uniqueEvents: Event[] = [];
   let duplicateCount = 0;
 
   for (const event of allEvents) {
-    if (!seen.has(event.promtnSn)) {
-      seen.add(event.promtnSn);
+    if (!seen.has(event.eventId)) {
+      seen.add(event.eventId);
       uniqueEvents.push(event);
     } else {
       duplicateCount++;
@@ -194,7 +195,7 @@ export class BloodinfoParser implements SiteParser {
     return events.map((event) => ({
       siteId: this.siteId,
       siteName: this.siteName,
-      eventId: event.promtnSn,
+      eventId: event.eventId,
       title: event.title,
       startDate: event.startDate,
       endDate: event.endDate,

@@ -1,16 +1,10 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { isEventSent, markEventAsSent } from '../src/kv';
+import { createMockKV } from './mocks/kv';
 
-// Mock KV Store - cast with vi.fn() to allow mock methods
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockKV = {
-  get: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-  list: vi.fn(),
-  getWithMetadata: vi.fn(),
-} as any as KVNamespace;
+// Mock KV Store with proper typing
+const mockKV = createMockKV();
 
 describe('KV Store Operations', () => {
   beforeEach(() => {
@@ -19,7 +13,7 @@ describe('KV Store Operations', () => {
 
   // TEST-AC2-DUPLICATE-CHECK
   it('AC-2: Should return true if event was previously sent', async () => {
-    (mockKV.get as any).mockResolvedValue(JSON.stringify({ sentAt: '2025-01-01T00:00:00Z', title: 'Test Event' }));
+    vi.mocked(mockKV.get).mockResolvedValue(JSON.stringify({ sentAt: '2025-01-01T00:00:00Z', title: 'Test Event' }));
 
     const result = await isEventSent(mockKV, 'bloodinfo', '12345');
 
@@ -28,7 +22,7 @@ describe('KV Store Operations', () => {
   });
 
   it('AC-2: Should return false if event was not sent', async () => {
-    (mockKV.get as any).mockResolvedValue(null);
+    vi.mocked(mockKV.get).mockResolvedValue(null);
 
     const result = await isEventSent(mockKV, 'bloodinfo', '99999');
 
@@ -38,7 +32,7 @@ describe('KV Store Operations', () => {
 
   it('AC-2: Should treat any value as sent (even corrupted)', async () => {
     // If KV returns anything, it means the key exists
-    (mockKV.get as any).mockResolvedValue('invalid json');
+    vi.mocked(mockKV.get).mockResolvedValue('invalid json');
 
     const result = await isEventSent(mockKV, 'bloodinfo', '54321');
 
@@ -48,11 +42,11 @@ describe('KV Store Operations', () => {
 
   it('AC-3: Should mark event as sent with timestamp', async () => {
     const event = {
-      promtnSn: '111',
+      eventId: '111',
       title: '헌혈 이벤트',
     };
 
-    await markEventAsSent(mockKV, 'bloodinfo', event.promtnSn, event.title);
+    await markEventAsSent(mockKV, 'bloodinfo', event.eventId, event.title);
 
     expect(mockKV.put).toHaveBeenCalledWith(
       'sent:bloodinfo:111',
@@ -64,7 +58,7 @@ describe('KV Store Operations', () => {
   });
 
   it('AC-3: Should handle KV write failures gracefully', async () => {
-    (mockKV.put as any).mockRejectedValue(new Error('KV write failed'));
+    vi.mocked(mockKV.put).mockRejectedValue(new Error('KV write failed'));
 
     const result = await markEventAsSent(mockKV, 'bloodinfo', '222', 'Test').catch((err: Error) => err.message);
 
