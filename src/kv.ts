@@ -1,9 +1,10 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
+import { CONFIG } from './config';
 
 export interface SentRecord {
   sentAt: string; // ISO8601
   title: string;
-  promtnSn: string;
+  eventId: string;
 }
 
 /**
@@ -16,7 +17,7 @@ export interface SentRecord {
  */
 export async function isEventSent(kv: KVNamespace, siteId: string, eventId: string): Promise<boolean> {
   try {
-    const key = `sent:${siteId}:${eventId}`;
+    const key = `${CONFIG.kv.keyPrefix}${siteId}:${eventId}`;
     const record = await kv.get(key);
     return record !== null;
   } catch (error) {
@@ -36,15 +37,15 @@ export async function isEventSent(kv: KVNamespace, siteId: string, eventId: stri
  */
 export async function markEventAsSent(kv: KVNamespace, siteId: string, eventId: string, title: string): Promise<void> {
   try {
-    const key = `sent:${siteId}:${eventId}`;
+    const key = `${CONFIG.kv.keyPrefix}${siteId}:${eventId}`;
     const record: SentRecord = {
       sentAt: new Date().toISOString(),
       title,
-      promtnSn: eventId,
+      eventId: eventId,
     };
 
-    // 60 days TTL (in seconds)
-    const ttl = 60 * 24 * 60 * 60;
+    // TTL from config (in seconds)
+    const ttl = CONFIG.kv.ttlDays * 24 * 60 * 60;
 
     await kv.put(key, JSON.stringify(record), {
       expirationTtl: ttl,
@@ -59,16 +60,16 @@ export async function markEventAsSent(kv: KVNamespace, siteId: string, eventId: 
  * Get all sent event IDs (for debugging/monitoring)
  *
  * @param kv - Cloudflare KV namespace
- * @returns List of promtnSn that were sent
+ * @returns List of event IDs that were sent
  */
 export async function getSentEvents(kv: KVNamespace): Promise<string[]> {
   try {
     const sentIds: string[] = [];
-    const list = await kv.list({ prefix: 'sent:' });
+    const list = await kv.list({ prefix: CONFIG.kv.keyPrefix });
 
     for (const item of list.keys) {
-      const promtnSn = item.name.replace('sent:', '');
-      sentIds.push(promtnSn);
+      const eventId = item.name.replace(CONFIG.kv.keyPrefix, '');
+      sentIds.push(eventId);
     }
 
     return sentIds;
@@ -77,12 +78,6 @@ export async function getSentEvents(kv: KVNamespace): Promise<string[]> {
     return [];
   }
 }
-
-/**
- * Concurrency limit for parallel KV reads
- * TRACE: SPEC-KV-PARALLEL-READS-001
- */
-const KV_READ_CONCURRENCY = 5;
 
 /**
  * Filter events to only include new (unsent) ones with parallel KV reads
@@ -99,9 +94,9 @@ export async function filterNewEvents(kv: KVNamespace, events: Array<{ siteId: s
 
   const newEvents: Array<{ siteId: string; eventId: string }> = [];
 
-  // Process events in batches with concurrency limit
-  for (let i = 0; i < events.length; i += KV_READ_CONCURRENCY) {
-    const batch = events.slice(i, i + KV_READ_CONCURRENCY);
+  // Process events in batches with concurrency limit from config
+  for (let i = 0; i < events.length; i += CONFIG.kv.readConcurrency) {
+    const batch = events.slice(i, i + CONFIG.kv.readConcurrency);
 
     // Fetch sent status for all events in batch in parallel
     const batchResults = await Promise.allSettled(

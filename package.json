@@ -1,7 +1,7 @@
 {
-  "name": "bloodinfo-event-parser-cf",
+  "name": "event-parser-cf",
   "version": "1.0.0",
-  "description": "Cloudflare Worker to collect blood donation events and send Telegram notifications",
+  "description": "Cloudflare Worker to collect events and send Telegram notifications",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {

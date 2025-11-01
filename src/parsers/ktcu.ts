@@ -7,8 +7,10 @@
  */
 
 import { load } from 'cheerio';
-import xss from 'xss';
 import type { SiteParser, SiteEvent } from '../types/site-parser';
+import { fetchWithTimeout } from '../utils/fetch';
+import { normalizeText } from '../utils/sanitize';
+import { CONFIG } from '../config';
 
 export interface KtcuEvent {
   eventId: string;
@@ -16,59 +18,6 @@ export interface KtcuEvent {
   startDate: string;
   endDate: string;
   sourceUrl: string;
-}
-
-/**
- * KTCU Parser Configuration
- */
-const KTCU_CONFIG = {
-  SITE_URL: 'https://www.ktcu.or.kr/PPW-WFA-100101',
-  EVENT_CLASS: 'box-event',
-  TITLE_SELECTOR: 'strong.tit',
-  DATE_SELECTOR: 'p.date',
-  FETCH_TIMEOUT_MS: 10000, // 10 seconds
-} as const;
-
-/**
- * Fetch with timeout support
- *
- * @param url - URL to fetch
- * @param timeoutMs - Timeout in milliseconds
- * @returns Response promise
- * @throws Error if fetch times out or fails
- */
-async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(url, { signal: controller.signal });
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-/**
- * Normalize text by removing HTML tags and cleaning whitespace
- * Safely handles fragmented HTML tags to prevent XSS injection
- *
- * TRACE: SPEC-KTCU-PARSER-001 (Security fix for CodeQL incomplete sanitization)
- * @param text - Text possibly containing HTML
- * @returns Normalized text safe from XSS
- */
-function normalizeText(text: string): string {
-  // Use xss library to sanitize and remove all tags
-  // whiteList: {} - no tags allowed (removes all HTML)
-  // stripIgnoreTag: true - removes ignored tags instead of escaping
-  // allowCommentTag: false - removes HTML comments
-  const sanitized = xss(text, {
-    whiteList: {}, // No tags allowed
-    stripIgnoreTag: true,
-    allowCommentTag: false,
-  });
-
-  // Normalize multiple spaces to single space
-  return sanitized.replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -145,8 +94,8 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
   try {
     const $ = load(html);
 
-    // Find all event boxes: div.box-event
-    const eventElements = $(`.${KTCU_CONFIG.EVENT_CLASS}`);
+    // Find all event boxes
+    const eventElements = $(`.${CONFIG.ktcu.eventClass}`);
 
     eventElements.each((index, element) => {
       try {
@@ -160,15 +109,15 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
           return; // Skip if no event ID found
         }
 
-        // AC-2: Extract title from <strong class="tit">
-        const titleElement = $el.find(KTCU_CONFIG.TITLE_SELECTOR);
+        // AC-2: Extract title from title selector
+        const titleElement = $el.find(CONFIG.ktcu.selectors.title);
         const rawTitle = titleElement.html() || '';
         // Replace <br> tags with spaces for proper formatting
         const titleWithSpaces = rawTitle.replace(/<br\s*\/?>/gi, ' ');
         const title = normalizeText(titleWithSpaces);
 
-        // AC-3: Extract and parse date range from <p class="date">
-        const dateElement = $el.find(KTCU_CONFIG.DATE_SELECTOR);
+        // AC-3: Extract and parse date range from date selector
+        const dateElement = $el.find(CONFIG.ktcu.selectors.date);
         const dateRangeText = dateElement.text();
 
         if (!title || !dateRangeText) {
@@ -186,7 +135,7 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
         }
 
         // AC-6: Generate sourceUrl
-        const sourceUrl = `${KTCU_CONFIG.SITE_URL}#${eventId}`;
+        const sourceUrl = `${CONFIG.ktcu.siteUrl}#${eventId}`;
 
         events.push({
           eventId,
@@ -217,11 +166,11 @@ export function parseKtcuEvents(html: string): KtcuEvent[] {
  */
 export async function fetchAndParseKtcuEvents(): Promise<KtcuEvent[]> {
   try {
-    const response = await fetchWithTimeout(KTCU_CONFIG.SITE_URL, KTCU_CONFIG.FETCH_TIMEOUT_MS);
+    const response = await fetchWithTimeout(CONFIG.ktcu.siteUrl, {}, CONFIG.ktcu.fetchTimeoutMs);
 
     if (!response.ok) {
       throw new Error(
-        `HTTP ${response.status}: ${response.statusText} when fetching from ${KTCU_CONFIG.SITE_URL}`
+        `HTTP ${response.status}: ${response.statusText} when fetching from ${CONFIG.ktcu.siteUrl}`
       );
     }
 

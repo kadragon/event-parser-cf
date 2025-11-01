@@ -1,7 +1,6 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 
-import { BloodinfoParser } from './parser';
-import { KtcuParser } from './parsers/ktcu';
+import { BloodinfoParser, KtcuParser } from './parsers';
 import { filterNewEvents, markEventAsSent } from './kv';
 import { sendEventNotification, sendErrorNotification } from './telegram';
 import type { SiteParser, SiteEvent } from './types/site-parser';

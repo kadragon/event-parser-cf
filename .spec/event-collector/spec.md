@@ -17,19 +17,19 @@
 ## Behaviour (Given-When-Then)
 
 **AC-1: New Events Detection**
-- GIVEN: An event with a unique `promtnSn` exists on bloodinfo.net
+- GIVEN: An event with a unique `eventId` exists on bloodinfo.net
 - WHEN: The daily cron job executes (KST 00:00)
 - THEN: The event is extracted and marked as a candidate for notification
 
 **AC-2: Duplicate Prevention**
-- GIVEN: An event with `promtnSn` has been previously sent to Telegram
+- GIVEN: An event with `eventId` has been previously sent to Telegram
 - WHEN: The daily cron job executes
 - THEN: The event is NOT sent again (cross-check KV Store)
 
 **AC-3: Batch Telegram Notification**
 - GIVEN: One or more new events are detected
 - WHEN: All events are collected
-- THEN: A single Telegram message is sent containing all new events with their titles, date ranges, and promtnSn-based links
+- THEN: A single Telegram message is sent containing all new events with their titles, date ranges, and eventId-based links
 
 **AC-4: Error Notification**
 - GIVEN: HTML parsing or API call fails
@@ -47,10 +47,10 @@
 
 | Scenario | Input | Expected Output |
 |----------|-------|-----------------|
-| 2 new events | `promtnSn: [A, B]` | 1 Telegram msg with both events |
-| 0 new events | `promtnSn: []` (all already sent) | Silent (no msg) |
+| 2 new events | `eventId: [A, B]` | 1 Telegram msg with both events |
+| 0 new events | `eventId: []` (all already sent) | Silent (no msg) |
 | Parse error | Invalid HTML / network failure | 1 error Telegram msg |
-| Mixed (1 new, 2 old) | `promtnSn: [A, B, C]` where B,C sent | 1 msg with only A |
+| Mixed (1 new, 2 old) | `eventId: [A, B, C]` where B,C sent | 1 msg with only A |
 
 ---
 
@@ -93,8 +93,8 @@ TELEGRAM_CHAT_ID: "chat_id"
 ```
 
 ### KV Store Operations
-- **Key**: `sent:${promtnSn}`
-- **Value**: JSON `{ sentAt: ISO8601, title: string }`
+- **Key**: `sent:${siteId}:${eventId}`
+- **Value**: JSON `{ sentAt: ISO8601, title: string, eventId: string }`
 - **TTL**: 60 days (auto-cleanup)
 
 ---
@@ -104,7 +104,7 @@ TELEGRAM_CHAT_ID: "chat_id"
 ### Event Entity
 ```typescript
 interface Event {
-  promtnSn: string;        // data-id from <a class="promtnInfoBtn">
+  eventId: string;         // data-id from <a class="promtnInfoBtn">
   title: string;           // Event title
   startDate: string;       // YYYY.MM.DD
   endDate: string;         // YYYY.MM.DD
@@ -117,13 +117,13 @@ interface Event {
 interface SentRecord {
   sentAt: string;         // ISO8601 timestamp
   title: string;
-  promtnSn: string;
+  eventId: string;
 }
 ```
 
 ### Invariants
-- Each event must have a unique `promtnSn` per URL
-- Duplicate check is case-insensitive on `promtnSn`
+- Each event must have a unique `eventId` per URL
+- Duplicate check is case-insensitive on `eventId`
 - Date range must be valid (startDate <= endDate)
 
 ---
@@ -164,7 +164,7 @@ interface SentRecord {
 
 **Implementation Files**:
 - `src/index.ts` (main worker)
-- `src/parser.ts` (HTML parsing)
+- `src/parsers/bloodinfo.ts` (HTML parsing)
 - `src/telegram.ts` (Telegram integration)
 - `src/kv.ts` (KV Store operations)
 - `tests/parser.test.ts`
