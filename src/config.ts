@@ -35,9 +35,6 @@ export const CONFIG = {
     /** Promotion category IDs to fetch (mi parameter) */
     categories: [1301, 1303] as const,
 
-    /** Excluded category (혈액수급 관련 이벤트) */
-    excludedCategories: [1302] as const,
-
     /** CSS selectors */
     selectors: {
       eventLink: 'a.promtnInfoBtn',

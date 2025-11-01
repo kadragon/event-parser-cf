@@ -164,18 +164,15 @@ export async function fetchAllEvents(): Promise<Event[]> {
 
   // Deduplicate by eventId (keep first occurrence)
   const seen = new Set<string>();
-  const uniqueEvents: Event[] = [];
-  let duplicateCount = 0;
-
-  for (const event of allEvents) {
-    if (!seen.has(event.eventId)) {
-      seen.add(event.eventId);
-      uniqueEvents.push(event);
-    } else {
-      duplicateCount++;
+  const uniqueEvents = allEvents.filter((event) => {
+    if (seen.has(event.eventId)) {
+      return false;
     }
-  }
+    seen.add(event.eventId);
+    return true;
+  });
 
+  const duplicateCount = allEvents.length - uniqueEvents.length;
   if (duplicateCount > 0) {
     console.log(`Removed ${duplicateCount} duplicate event(s) across categories`);
   }
