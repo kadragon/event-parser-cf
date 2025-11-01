@@ -12,8 +12,8 @@ src/
 │   └── site-parser.ts              # 파서 인터페이스 정의
 ├── parsers/
 │   ├── index.ts                    # 파서 레지스트리 (모든 파서 import/export)
+│   ├── bloodinfo.ts                # Bloodinfo 파서 + BloodinfoParser 클래스
 │   └── ktcu.ts                     # KTCU 파서 (예제)
-├── parser.ts                       # Bloodinfo 파서 + BloodinfoParser 클래스
 ├── kv.ts                           # KV Store 관리 (사이트별 키 지원)
 ├── telegram.ts                     # Telegram 알림 (멀티사이트 메시지 포맷)
 └── index.ts                        # 메인 worker 진입점 (사이트 레지스트리 관리)

@@ -35,10 +35,10 @@ bloodinfo-event-parser-cf/
 │   │   └── site-parser.ts          # SiteParser 인터페이스 정의
 │   ├── parsers/
 │   │   ├── index.ts                # 파서 레지스트리
+│   │   ├── bloodinfo.ts            # Bloodinfo 파서 (+ BloodinfoParser 클래스)
 │   │   ├── ktcu.ts                 # KTCU 파서 (예제)
 │   │   └── [새사이트].ts           # 추가 파서들
 │   ├── index.ts                    # 메인 Worker 진입점 (파서 오케스트레이션)
-│   ├── parser.ts                   # Bloodinfo 파서 (+ BloodinfoParser 클래스)
 │   ├── kv.ts                       # KV Store 관리 (사이트별 키)
 │   └── telegram.ts                 # Telegram API 통합 (멀티사이트 메시지)
 ├── wrangler.toml                   # Cloudflare Workers 설정
@@ -197,7 +197,7 @@ Key: sent:{siteId}:{eventId}
 Value: {
   "sentAt": "2025-10-26T00:00:00Z",
   "title": "이벤트 제목",
-  "promtnSn": "eventId"
+  "eventId": "eventId"
 }
 TTL: 60일 (5,184,000초)
 

@@ -4,7 +4,7 @@ import { parseEvents, fetchAllEvents } from '../src/parsers/bloodinfo';
 
 describe('HTML Parser - parseEvents()', () => {
   // TEST-AC1-NEW-EVENTS
-  it('AC-1: Should extract events with promtnSn, title, and date range', () => {
+  it('AC-1: Should extract events with eventId, title, and date range', () => {
     const mockHtml = `
       <a href="javascript:" data-id="12345" class="promtnInfoBtn"><span>혈액 수급 지원 프로모션</span></a>
       <a href="javascript:" data-id="12345" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.12.31</span></a>
@@ -14,7 +14,7 @@ describe('HTML Parser - parseEvents()', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
-      promtnSn: '12345',
+      eventId: '12345',
       title: '혈액 수급 지원 프로모션',
       startDate: '2025.01.01',
       endDate: '2025.12.31',
@@ -33,8 +33,8 @@ describe('HTML Parser - parseEvents()', () => {
     const events = parseEvents(mockHtml, 1302);
 
     expect(events).toHaveLength(2);
-    expect(events[0].promtnSn).toBe('111');
-    expect(events[1].promtnSn).toBe('222');
+    expect(events[0].eventId).toBe('111');
+    expect(events[1].eventId).toBe('222');
   });
 
   it('AC-1: Should handle missing data gracefully', () => {
@@ -108,7 +108,7 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
   });
 
   // TEST-dedupe-events
-  it('AC-2: Should deduplicate events with same promtnSn and log count', async () => {
+  it('AC-2: Should deduplicate events with same eventId and log count', async () => {
     // Mock global fetch
     const mockFetch = vi.fn();
     global.fetch = mockFetch;
@@ -116,7 +116,7 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
     // Mock console.log to capture deduplication message
     const consoleLogSpy = vi.spyOn(console, 'log');
 
-    // Mock responses - same promtnSn "duplicate-123" in both categories
+    // Mock responses - same eventId "duplicate-123" in both categories
     mockFetch.mockImplementation((url: string) => {
       const mockHtml = `
         <a href="javascript:" data-id="duplicate-123" class="promtnInfoBtn"><span>Duplicate Event</span></a>
@@ -132,7 +132,7 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
 
     // Should only have 1 event (duplicate removed)
     expect(events).toHaveLength(1);
-    expect(events[0].promtnSn).toBe('duplicate-123');
+    expect(events[0].eventId).toBe('duplicate-123');
 
     // Should log the number of duplicates removed
     expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -165,7 +165,7 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
 
     // Should have 2 events (one from each category: 1301, 1303)
     expect(events).toHaveLength(2);
-    expect(events[0].promtnSn).toBe('unique-1');
-    expect(events[1].promtnSn).toBe('unique-2');
+    expect(events[0].eventId).toBe('unique-1');
+    expect(events[1].eventId).toBe('unique-2');
   });
 });
