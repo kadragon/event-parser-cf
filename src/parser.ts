@@ -140,12 +140,15 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
 }
 
 /**
- * Fetch events from all three promotion categories
+ * Fetch events from all promotion categories (excluding 1302)
+ * Deduplicates events by promtnSn across categories
  *
- * @returns Combined array of all events from all categories
+ * @returns Combined array of all unique events from all categories
  */
 export async function fetchAllEvents(): Promise<Event[]> {
-  const miValues = [1301, 1302, 1303];
+  // GENERATED FROM SPEC-bloodinfo-filter-001
+  // Exclude mi=1302 as per requirement
+  const miValues = [1301, 1303];
   const allEvents: Event[] = [];
 
   for (const mi of miValues) {
@@ -158,7 +161,25 @@ export async function fetchAllEvents(): Promise<Event[]> {
     }
   }
 
-  return allEvents;
+  // Deduplicate by promtnSn (keep first occurrence)
+  const seen = new Set<string>();
+  const uniqueEvents: Event[] = [];
+  let duplicateCount = 0;
+
+  for (const event of allEvents) {
+    if (!seen.has(event.promtnSn)) {
+      seen.add(event.promtnSn);
+      uniqueEvents.push(event);
+    } else {
+      duplicateCount++;
+    }
+  }
+
+  if (duplicateCount > 0) {
+    console.log(`Removed ${duplicateCount} duplicate event(s) across categories`);
+  }
+
+  return uniqueEvents;
 }
 
 /**
