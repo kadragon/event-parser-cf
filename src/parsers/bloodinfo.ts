@@ -1,7 +1,7 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { load } from 'cheerio';
-import { getRandomUserAgent } from './utils/user-agent';
-import type { SiteParser, SiteEvent } from './types/site-parser';
+import { getRandomUserAgent } from '../utils/user-agent';
+import type { SiteParser, SiteEvent } from '../types/site-parser';
 
 export interface Event {
   promtnSn: string;

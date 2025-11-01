@@ -1,6 +1,6 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { describe, it, expect, vi } from 'vitest';
-import { parseEvents, fetchAllEvents } from '../src/parser';
+import { parseEvents, fetchAllEvents } from '../src/parsers/bloodinfo';
 
 describe('HTML Parser - parseEvents()', () => {
   // TEST-AC1-NEW-EVENTS
