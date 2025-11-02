@@ -43,10 +43,10 @@ function extractPerformanceNo(url: string | undefined): string {
  *
  * TRACE: SPEC-SJAC-PARSER-001
  * @param html - Raw HTML content
- * @returns Promise<Array of parsed events>
+ * @returns Array of parsed events
  * @throws Error if HTML parsing fails
  */
-export async function parseSjacEvents(html: string): Promise<SjacEvent[]> {
+export function parseSjacEvents(html: string): SjacEvent[] {
   const events: SjacEvent[] = [];
 
   try {

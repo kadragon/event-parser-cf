@@ -70,7 +70,7 @@ export const CONFIG = {
    */
   sjac: {
     /** Site URL for SJAC ticket open schedule board */
-    siteUrl: 'https://www.sjac.or.kr/base/board/list?boardManagementNo=38&menuLevel=2&menuNo=223',
+    siteUrl: 'https://www.sjac.or.kr/base/board/list?boardManagementNo=38',
 
     /** Fetch timeout in milliseconds */
     fetchTimeoutMs: 10000,
