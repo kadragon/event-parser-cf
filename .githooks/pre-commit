@@ -23,36 +23,60 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 # Filter for TypeScript files
 TS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx)$' || true)
 
-if [ -z "$TS_FILES" ]; then
-  echo -e "${GREEN}✓ No TypeScript files to check${NC}"
+# Filter for Markdown files (excluding .spec, .tasks, .agents directories)
+MD_FILES=$(echo "$STAGED_FILES" | grep -E '\.md$' | grep -v -E '^\.spec/|^\.tasks/|^\.agents/' || true)
+
+# Check if there are any files to process
+if [ -z "$TS_FILES" ] && [ -z "$MD_FILES" ]; then
+  echo -e "${GREEN}✓ No files to check${NC}"
   exit 0
 fi
 
-echo -e "${YELLOW}📝 Staged TypeScript files:${NC}"
-echo "$TS_FILES" | sed 's/^/  /'
+# TypeScript checks
+if [ -n "$TS_FILES" ]; then
+  echo -e "${YELLOW}📝 Staged TypeScript files:${NC}"
+  echo "$TS_FILES" | sed 's/^/  /'
 
-# Run TypeScript type checking
-echo -e "\n${YELLOW}⚙️  Running TypeScript type checking...${NC}"
-if npx tsc --noEmit; then
-  echo -e "${GREEN}✓ TypeScript type checking passed${NC}"
-else
-  echo -e "${RED}❌ TypeScript type checking failed${NC}"
-  echo -e "${RED}Please fix the type errors and try again.${NC}"
-  exit 1
-fi
-
-# Run ESLint if .eslintrc exists
-if [ -f ".eslintrc" ] || [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ]; then
-  echo -e "\n${YELLOW}📋 Running ESLint...${NC}"
-  if npx eslint $TS_FILES --max-warnings 0; then
-    echo -e "${GREEN}✓ ESLint passed${NC}"
+  # Run TypeScript type checking
+  echo -e "\n${YELLOW}⚙️  Running TypeScript type checking...${NC}"
+  if npx tsc --noEmit; then
+    echo -e "${GREEN}✓ TypeScript type checking passed${NC}"
   else
-    echo -e "${RED}❌ ESLint failed${NC}"
-    echo -e "${RED}Please fix the linting errors and try again.${NC}"
+    echo -e "${RED}❌ TypeScript type checking failed${NC}"
+    echo -e "${RED}Please fix the type errors and try again.${NC}"
     exit 1
   fi
-else
-  echo -e "\n${YELLOW}ℹ️  ESLint not configured, skipping...${NC}"
+
+  # Run ESLint if .eslintrc exists
+  if [ -f ".eslintrc" ] || [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ]; then
+    echo -e "\n${YELLOW}📋 Running ESLint...${NC}"
+    if echo "$TS_FILES" | xargs -r npx eslint --max-warnings 0; then
+      echo -e "${GREEN}✓ ESLint passed${NC}"
+    else
+      echo -e "${RED}❌ ESLint failed${NC}"
+      echo -e "${RED}Please fix the linting errors and try again.${NC}"
+      exit 1
+    fi
+  else
+    echo -e "\n${YELLOW}ℹ️  ESLint not configured, skipping...${NC}"
+  fi
+fi
+
+# Markdown checks
+if [ -n "$MD_FILES" ]; then
+  echo -e "\n${YELLOW}📝 Staged Markdown files:${NC}"
+  echo "$MD_FILES" | sed 's/^/  /'
+
+  # Run markdownlint
+  echo -e "\n${YELLOW}📋 Running markdownlint...${NC}"
+  if echo "$MD_FILES" | xargs -r npx markdownlint-cli2; then
+    echo -e "${GREEN}✓ markdownlint passed${NC}"
+  else
+    echo -e "${RED}❌ markdownlint failed${NC}"
+    echo -e "${RED}Please fix the markdown errors and try again.${NC}"
+    echo -e "${YELLOW}Tip: Run 'echo \"\$MD_FILES\" | xargs -r npx markdownlint-cli2 --fix' to auto-fix some issues${NC}"
+    exit 1
+  fi
 fi
 
 echo -e "\n${GREEN}✅ All pre-commit checks passed!${NC}"

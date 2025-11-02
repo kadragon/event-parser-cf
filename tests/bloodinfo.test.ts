@@ -1,6 +1,7 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
+// TRACE: SPEC-BRANCH-COVERAGE-001
 import { describe, it, expect, vi } from 'vitest';
-import { parseEvents, fetchAllEvents } from '../src/parsers/bloodinfo';
+import { parseEvents, fetchAllEvents, fetchAndParseEvents, BloodinfoParser } from '../src/parsers/bloodinfo';
 
 describe('HTML Parser - parseEvents()', () => {
   // TEST-AC1-NEW-EVENTS
@@ -167,5 +168,172 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
     expect(events).toHaveLength(2);
     expect(events[0].eventId).toBe('unique-1');
     expect(events[1].eventId).toBe('unique-2');
+  });
+
+  // SPEC-BRANCH-COVERAGE-001: Error handling tests
+  // TEST-AC8-FETCH-FAILURE
+  it('AC-8: Should log and throw error when fetchAndParseEvents fails', async () => {
+    // Mock global fetch
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    mockFetch.mockRejectedValue(new Error('Network error'));
+
+    await expect(fetchAndParseEvents(1301)).rejects.toThrow('Network error');
+
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  // TEST-AC9-CATEGORY-FAILURE-CONTINUES
+  it('AC-9: Should continue with other categories when one category fetch fails', async () => {
+    // Mock global fetch
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // First call (mi=1301) fails, second call (mi=1303) succeeds
+    mockFetch
+      .mockRejectedValueOnce(new Error('Failed for mi=1301'))
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => `
+          <a href="javascript:" data-id="success-123" class="promtnInfoBtn"><span>Success Event</span></a>
+          <a href="javascript:" data-id="success-123" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.01.31</span></a>
+        `,
+      } as Response);
+
+    const events = await fetchAllEvents();
+
+    // Should have 1 event from the successful category
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('success-123');
+
+    // Should log error for failed category
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to fetch events for mi=1301'),
+      expect.any(Error)
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+// SPEC-BRANCH-COVERAGE-001: BloodinfoParser interface test
+describe('SPEC-BRANCH-COVERAGE-001: BloodinfoParser Interface', () => {
+  // TEST-AC10-PARSER-INTERFACE
+  it('AC-10: Should implement SiteParser interface correctly', async () => {
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: async () => `
+        <a href="javascript:" data-id="parser-test-123" class="promtnInfoBtn"><span>Parser Test Event</span></a>
+        <a href="javascript:" data-id="parser-test-123" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.01.31</span></a>
+      `,
+    } as Response);
+
+    const parser = new BloodinfoParser();
+
+    expect(parser.siteId).toBe('bloodinfo');
+    expect(parser.siteName).toBe('혈액정보');
+
+    const events = await parser.fetchAndParse();
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      siteId: 'bloodinfo',
+      siteName: '혈액정보',
+      eventId: 'parser-test-123',
+      title: 'Parser Test Event',
+      startDate: '2025.01.01',
+      endDate: '2025.01.31',
+    });
+  });
+});
+
+// SPEC-BRANCH-COVERAGE-001: Additional edge cases for branch coverage
+describe('SPEC-BRANCH-COVERAGE-001: Edge Cases for Branch Coverage', () => {
+  // TEST-AC11-NBSP-IN-DATE
+  it('AC-11: Should handle &nbsp; in date text correctly', () => {
+    const mockHtml = `
+      <a href="javascript:" data-id="nbsp-test" class="promtnInfoBtn"><span>NBSP Test Event</span></a>
+      <a href="javascript:" data-id="nbsp-test" class="promtnInfoBtn"><span>2025.01.01&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;2025.01.31</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    expect(events).toHaveLength(1);
+    expect(events[0].startDate).toBe('2025.01.01');
+    expect(events[0].endDate).toBe('2025.01.31');
+  });
+
+  // TEST-AC12-INVALID-DATE-SPLIT
+  it('AC-12: Should skip events with invalid date format (missing start or end)', () => {
+    const mockHtml = `
+      <a href="javascript:" data-id="invalid-date-1" class="promtnInfoBtn"><span>Invalid Date 1</span></a>
+      <a href="javascript:" data-id="invalid-date-1" class="promtnInfoBtn"><span>2025.01.01</span></a>
+      <a href="javascript:" data-id="invalid-date-2" class="promtnInfoBtn"><span>Invalid Date 2</span></a>
+      <a href="javascript:" data-id="invalid-date-2" class="promtnInfoBtn"><span>~ 2025.01.31</span></a>
+      <a href="javascript:" data-id="valid-event" class="promtnInfoBtn"><span>Valid Event</span></a>
+      <a href="javascript:" data-id="valid-event" class="promtnInfoBtn"><span>2025.02.01 ~ 2025.02.28</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    // Only the valid event should be parsed
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('valid-event');
+    expect(events[0].title).toBe('Valid Event');
+  });
+
+  // TEST-AC13-MISSING-EVENTID
+  it('AC-13: Should skip events without eventId attribute', () => {
+    const mockHtml = `
+      <a href="javascript:" class="promtnInfoBtn"><span>No Event ID</span></a>
+      <a href="javascript:" class="promtnInfoBtn"><span>2025.01.01 ~ 2025.01.31</span></a>
+      <a href="javascript:" data-id="with-id" class="promtnInfoBtn"><span>With ID</span></a>
+      <a href="javascript:" data-id="with-id" class="promtnInfoBtn"><span>2025.02.01 ~ 2025.02.28</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    // Only event with ID should be parsed
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('with-id');
+  });
+
+  // TEST-AC14-NO-DATE-LINK-FOUND
+  it('AC-14: Should skip events when no matching date link is found', () => {
+    const mockHtml = `
+      <a href="javascript:" data-id="orphan-title" class="promtnInfoBtn"><span>Title Without Date</span></a>
+      <a href="javascript:" data-id="different-id" class="promtnInfoBtn"><span>2025.01.01 ~ 2025.01.31</span></a>
+      <a href="javascript:" data-id="complete" class="promtnInfoBtn"><span>Complete Event</span></a>
+      <a href="javascript:" data-id="complete" class="promtnInfoBtn"><span>2025.02.01 ~ 2025.02.28</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    // Only the complete event should be parsed
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('complete');
+  });
+
+  // TEST-AC15-HTTP-ERROR-RESPONSE
+  it('AC-15: Should throw error when HTTP response is not ok', async () => {
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    } as Response);
+
+    await expect(fetchAndParseEvents(1301)).rejects.toThrow('HTTP 404: Not Found');
   });
 });
