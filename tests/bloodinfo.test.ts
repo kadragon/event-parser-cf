@@ -255,3 +255,85 @@ describe('SPEC-BRANCH-COVERAGE-001: BloodinfoParser Interface', () => {
     });
   });
 });
+
+// SPEC-BRANCH-COVERAGE-001: Additional edge cases for branch coverage
+describe('SPEC-BRANCH-COVERAGE-001: Edge Cases for Branch Coverage', () => {
+  // TEST-AC11-NBSP-IN-DATE
+  it('AC-11: Should handle &nbsp; in date text correctly', () => {
+    const mockHtml = `
+      <a href="javascript:" data-id="nbsp-test" class="promtnInfoBtn"><span>NBSP Test Event</span></a>
+      <a href="javascript:" data-id="nbsp-test" class="promtnInfoBtn"><span>2025.01.01&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;2025.01.31</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    expect(events).toHaveLength(1);
+    expect(events[0].startDate).toBe('2025.01.01');
+    expect(events[0].endDate).toBe('2025.01.31');
+  });
+
+  // TEST-AC12-INVALID-DATE-SPLIT
+  it('AC-12: Should skip events with invalid date format (missing start or end)', () => {
+    const mockHtml = `
+      <a href="javascript:" data-id="invalid-date-1" class="promtnInfoBtn"><span>Invalid Date 1</span></a>
+      <a href="javascript:" data-id="invalid-date-1" class="promtnInfoBtn"><span>2025.01.01</span></a>
+      <a href="javascript:" data-id="invalid-date-2" class="promtnInfoBtn"><span>Invalid Date 2</span></a>
+      <a href="javascript:" data-id="invalid-date-2" class="promtnInfoBtn"><span>~ 2025.01.31</span></a>
+      <a href="javascript:" data-id="valid-event" class="promtnInfoBtn"><span>Valid Event</span></a>
+      <a href="javascript:" data-id="valid-event" class="promtnInfoBtn"><span>2025.02.01 ~ 2025.02.28</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    // Only the valid event should be parsed
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('valid-event');
+    expect(events[0].title).toBe('Valid Event');
+  });
+
+  // TEST-AC13-MISSING-EVENTID
+  it('AC-13: Should skip events without eventId attribute', () => {
+    const mockHtml = `
+      <a href="javascript:" class="promtnInfoBtn"><span>No Event ID</span></a>
+      <a href="javascript:" class="promtnInfoBtn"><span>2025.01.01 ~ 2025.01.31</span></a>
+      <a href="javascript:" data-id="with-id" class="promtnInfoBtn"><span>With ID</span></a>
+      <a href="javascript:" data-id="with-id" class="promtnInfoBtn"><span>2025.02.01 ~ 2025.02.28</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    // Only event with ID should be parsed
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('with-id');
+  });
+
+  // TEST-AC14-NO-DATE-LINK-FOUND
+  it('AC-14: Should skip events when no matching date link is found', () => {
+    const mockHtml = `
+      <a href="javascript:" data-id="orphan-title" class="promtnInfoBtn"><span>Title Without Date</span></a>
+      <a href="javascript:" data-id="different-id" class="promtnInfoBtn"><span>2025.01.01 ~ 2025.01.31</span></a>
+      <a href="javascript:" data-id="complete" class="promtnInfoBtn"><span>Complete Event</span></a>
+      <a href="javascript:" data-id="complete" class="promtnInfoBtn"><span>2025.02.01 ~ 2025.02.28</span></a>
+    `;
+
+    const events = parseEvents(mockHtml, 1301);
+
+    // Only the complete event should be parsed
+    expect(events).toHaveLength(1);
+    expect(events[0].eventId).toBe('complete');
+  });
+
+  // TEST-AC15-HTTP-ERROR-RESPONSE
+  it('AC-15: Should throw error when HTTP response is not ok', async () => {
+    const mockFetch = vi.fn();
+    global.fetch = mockFetch;
+
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    } as Response);
+
+    await expect(fetchAndParseEvents(1301)).rejects.toThrow('HTTP 404: Not Found');
+  });
+});

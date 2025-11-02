@@ -393,3 +393,124 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Error Handling', () => {
     await expect(fetchAndParseKtcuEvents()).rejects.toThrow('Failed to parse KTCU HTML');
   });
 });
+
+// SPEC-BRANCH-COVERAGE-001: Additional edge cases for branch coverage
+describe('SPEC-BRANCH-COVERAGE-001: KTCU Edge Cases for Branch Coverage', () => {
+  // TEST-AC8-INVALID-DATE-RANGE-FORMAT
+  it('AC-8: Should skip events with invalid date range format', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+    const mockHtml = `
+      <div class="box-event" onclick="fn_viewEvent('invalid-date-1')">
+        <div class="event-txt">
+          <strong class="tit">Invalid Date Format</strong>
+          <p class="date">Invalid Date Format</p>
+        </div>
+      </div>
+      <div class="box-event" onclick="fn_viewEvent('valid-event')">
+        <div class="event-txt">
+          <strong class="tit">Valid Event</strong>
+          <p class="date">2025-10-01(월) ~ ${futureDateStr}(수)</p>
+        </div>
+      </div>
+    `;
+
+    const events = await parseKtcuEvents(mockHtml);
+
+    // Only the valid event should be parsed
+    const validEvent = events.find(e => e.title === 'Valid Event');
+    expect(validEvent).toBeDefined();
+
+    // Invalid date event should be skipped
+    const invalidEvent = events.find(e => e.title === 'Invalid Date Format');
+    expect(invalidEvent).toBeUndefined();
+  });
+
+  // TEST-AC9-MISSING-TITLE
+  it('AC-9: Should skip events with missing title', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+    const mockHtml = `
+      <div class="box-event" onclick="fn_viewEvent('no-title')">
+        <div class="event-txt">
+          <strong class="tit"></strong>
+          <p class="date">2025-10-01(월) ~ ${futureDateStr}(수)</p>
+        </div>
+      </div>
+      <div class="box-event" onclick="fn_viewEvent('has-title')">
+        <div class="event-txt">
+          <strong class="tit">Has Title</strong>
+          <p class="date">2025-10-01(월) ~ ${futureDateStr}(수)</p>
+        </div>
+      </div>
+    `;
+
+    const events = await parseKtcuEvents(mockHtml);
+
+    // Event without title should be skipped
+    const noTitleEvent = events.find(e => e.title === '');
+    expect(noTitleEvent).toBeUndefined();
+
+    // Event with title should be included
+    const hasTitleEvent = events.find(e => e.title === 'Has Title');
+    expect(hasTitleEvent).toBeDefined();
+  });
+
+  // TEST-AC10-MISSING-DATE
+  it('AC-10: Should skip events with missing date', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+    const mockHtml = `
+      <div class="box-event" onclick="fn_viewEvent('no-date')">
+        <div class="event-txt">
+          <strong class="tit">No Date Event</strong>
+          <p class="date"></p>
+        </div>
+      </div>
+      <div class="box-event" onclick="fn_viewEvent('has-date')">
+        <div class="event-txt">
+          <strong class="tit">Has Date</strong>
+          <p class="date">2025-10-01(월) ~ ${futureDateStr}(수)</p>
+        </div>
+      </div>
+    `;
+
+    const events = await parseKtcuEvents(mockHtml);
+
+    // Event without date should be skipped
+    const noDateEvent = events.find(e => e.title === 'No Date Event');
+    expect(noDateEvent).toBeUndefined();
+
+    // Event with date should be included
+    const hasDateEvent = events.find(e => e.title === 'Has Date');
+    expect(hasDateEvent).toBeDefined();
+  });
+
+  // TEST-AC11-DATE-WITHOUT-DAY-OF-WEEK
+  it('AC-11: Should parse date range without day of week parentheses', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+    const mockHtml = `
+      <div class="box-event" onclick="fn_viewEvent('no-parens')">
+        <div class="event-txt">
+          <strong class="tit">No Parentheses Date</strong>
+          <p class="date">2025-10-01 ~ ${futureDateStr}</p>
+        </div>
+      </div>
+    `;
+
+    const events = await parseKtcuEvents(mockHtml);
+
+    expect(events).toHaveLength(1);
+    expect(events[0].title).toBe('No Parentheses Date');
+    expect(events[0].startDate).toBe('2025.10.01');
+  });
+});
