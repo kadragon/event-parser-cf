@@ -1,6 +1,7 @@
 // GENERATED FROM SPEC-KTCU-PARSER-001
-import { describe, it, expect, beforeEach } from 'vitest';
-import { parseKtcuEvents } from '../src/parsers/ktcu';
+// TRACE: SPEC-BRANCH-COVERAGE-001
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { parseKtcuEvents, fetchAndParseKtcuEvents } from '../src/parsers/ktcu';
 
 describe('KTCU Parser - parseKtcuEvents()', () => {
   // TEST-KTCU-001: AC-1 이벤트 HTML 파싱
@@ -342,5 +343,53 @@ describe('KTCU Title Hash as EventId', () => {
 
     expect(events).toHaveLength(2);
     expect(events[0].eventId).not.toBe(events[1].eventId);
+  });
+});
+
+// SPEC-BRANCH-COVERAGE-001: Error path testing
+describe('SPEC-BRANCH-COVERAGE-001: KTCU Error Handling', () => {
+  // Mock fetch
+  const mockFetch = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (global as any).fetch = mockFetch;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // TEST-AC4-INVALID-HTML
+  it('AC-4: Should throw error when parseKtcuEvents receives invalid HTML', async () => {
+    // Cheerio can handle most malformed HTML, but extremely broken input can cause issues
+    const invalidHtml = null as unknown as string;
+
+    await expect(parseKtcuEvents(invalidHtml)).rejects.toThrow('Failed to parse KTCU HTML');
+  });
+
+  // TEST-AC5-HTTP-ERROR
+  it('AC-5: Should throw error when fetch returns HTTP error', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+
+    await expect(fetchAndParseKtcuEvents()).rejects.toThrow('HTTP 500: Internal Server Error');
+  });
+
+  // TEST-AC6-FETCH-TIMEOUT
+  it('AC-6: Should throw error on fetch timeout', async () => {
+    mockFetch.mockRejectedValue(new Error('Request timeout'));
+
+    await expect(fetchAndParseKtcuEvents()).rejects.toThrow('KTCU event collection failed: Request timeout');
+  });
+
+  // TEST-AC7-PARSING-ERROR
+  it('AC-7: Should propagate parsing errors from parseKtcuEvents', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: async () => null as unknown as string,
+    });
+
+    await expect(fetchAndParseKtcuEvents()).rejects.toThrow('Failed to parse KTCU HTML');
   });
 });

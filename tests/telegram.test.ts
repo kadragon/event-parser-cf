@@ -478,4 +478,43 @@ describe('Telegram Integration', () => {
       expect(body.text).toContain('Code');
     });
   });
+
+  // SPEC-BRANCH-COVERAGE-001: Error path testing for sendErrorNotification
+  describe('SPEC-BRANCH-COVERAGE-001: Error Notification Edge Cases', () => {
+    // TEST-AC1-HTTP-ERROR
+    it('AC-1: Should throw error when HTTP request fails for error notification', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        text: async () => '{"error": "service down"}',
+      });
+
+      await expect(
+        sendErrorNotification('test_token', '123456', 'Test error')
+      ).rejects.toThrow('Failed to send error notification: HTTP 503');
+    });
+
+    // TEST-AC2-API-REJECTION
+    it('AC-2: Should throw error when Telegram API rejects error notification', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: false, description: 'Invalid chat_id' }),
+        text: async () => '{"ok": false, "description": "Invalid chat_id"}',
+      });
+
+      await expect(
+        sendErrorNotification('test_token', '123456', 'Test error')
+      ).rejects.toThrow('Telegram API rejected error notification: Invalid chat_id');
+    });
+
+    // TEST-AC3-NON-ERROR-THROWN
+    it('AC-3: Should handle non-Error objects in catch block', async () => {
+      mockFetch.mockRejectedValue('Network failure string');
+
+      await expect(
+        sendErrorNotification('test_token', '123456', 'Test error')
+      ).rejects.toThrow('Network failure string');
+    });
+  });
 });
