@@ -5,5 +5,6 @@
 
 export { BloodinfoParser } from './bloodinfo';
 export { KtcuParser } from './ktcu';
+export { SjacParser } from './sjac';
 // Add more site parsers as needed:
 // export { OtherSiteParser } from './other-site';

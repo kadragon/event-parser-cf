@@ -64,6 +64,30 @@ export const CONFIG = {
   },
 
   /**
+   * SJAC (세종예술의전당) parser configuration
+   * Site: https://www.sjac.or.kr
+   * TRACE: SPEC-SJAC-PARSER-001
+   */
+  sjac: {
+    /** Site URL for SJAC ticket open schedule board */
+    siteUrl: 'https://www.sjac.or.kr/base/board/list?boardManagementNo=38',
+
+    /** Fetch timeout in milliseconds */
+    fetchTimeoutMs: 10000,
+
+    /** CSS selectors */
+    selectors: {
+      tableBody: 'tbody',
+      tableRow: 'tr',
+      numberCell: 'td.num',
+      titleCell: 'td.tit',
+      titleLink: 'a',
+      dateCell: 'td.date',
+      newMark: 'em.new_mark',
+    },
+  },
+
+  /**
    * Telegram bot configuration
    */
   telegram: {
