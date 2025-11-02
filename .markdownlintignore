@@ -1,0 +1,11 @@
+# Spec-driven development directories (SDD)
+.spec/
+.tasks/
+.agents/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
