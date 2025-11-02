@@ -50,7 +50,7 @@ if [ -n "$TS_FILES" ]; then
   # Run ESLint if .eslintrc exists
   if [ -f ".eslintrc" ] || [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ]; then
     echo -e "\n${YELLOW}📋 Running ESLint...${NC}"
-    if npx eslint $TS_FILES --max-warnings 0; then
+    if echo "$TS_FILES" | xargs -r npx eslint --max-warnings 0; then
       echo -e "${GREEN}✓ ESLint passed${NC}"
     else
       echo -e "${RED}❌ ESLint failed${NC}"
@@ -69,12 +69,12 @@ if [ -n "$MD_FILES" ]; then
 
   # Run markdownlint
   echo -e "\n${YELLOW}📋 Running markdownlint...${NC}"
-  if npx markdownlint-cli2 $MD_FILES; then
+  if echo "$MD_FILES" | xargs -r npx markdownlint-cli2; then
     echo -e "${GREEN}✓ markdownlint passed${NC}"
   else
     echo -e "${RED}❌ markdownlint failed${NC}"
     echo -e "${RED}Please fix the markdown errors and try again.${NC}"
-    echo -e "${YELLOW}Tip: Run 'npx markdownlint-cli2 --fix $MD_FILES' to auto-fix some issues${NC}"
+    echo -e "${YELLOW}Tip: Run 'echo \"\$MD_FILES\" | xargs -r npx markdownlint-cli2 --fix' to auto-fix some issues${NC}"
     exit 1
   fi
 fi
