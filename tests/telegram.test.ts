@@ -1,7 +1,7 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 // Trace: SPEC-TELEGRAM-LENGTH-001
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendEventNotification, sendErrorNotification } from '../src/telegram';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { sendErrorNotification, sendEventNotification } from '../src/telegram';
 import type { SiteEvent } from '../src/types/site-parser';
 
 // Mock fetch
@@ -47,7 +47,9 @@ describe('Telegram Integration', () => {
 
     expect(mockFetch).toHaveBeenCalled();
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     expect(body.text).toContain('이벤트 1');
     expect(body.text).toContain('이벤트 2');
@@ -77,7 +79,9 @@ describe('Telegram Integration', () => {
     await sendEventNotification('test_token', '123456', events);
 
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     expect(body.text).toContain('https://www.bloodinfo.net/?mi=1301');
   });
@@ -94,7 +98,9 @@ describe('Telegram Integration', () => {
 
     expect(mockFetch).toHaveBeenCalled();
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     expect(body.text).toContain('오류');
     expect(body.text).toContain('HTML parsing failed');
@@ -119,7 +125,11 @@ describe('Telegram Integration', () => {
       },
     ];
 
-    const result = await sendEventNotification('test_token', '123456', events).catch((err: Error) => err);
+    const result = await sendEventNotification(
+      'test_token',
+      '123456',
+      events
+    ).catch((err: Error) => err);
 
     expect(result).toBeDefined();
   });
@@ -147,7 +157,9 @@ describe('Telegram Integration', () => {
     await sendEventNotification('test_token', '123456', events);
 
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     // Should escape < and > so that <script> doesn't execute
     expect(body.text).toContain('&lt;script&gt;');
@@ -177,7 +189,9 @@ describe('Telegram Integration', () => {
     await sendEventNotification('test_token', '123456', events);
 
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     // javascript: URL should be escaped/safe
     expect(body.text).toContain('javascript:alert');
@@ -196,7 +210,9 @@ describe('Telegram Integration', () => {
     await sendErrorNotification('test_token', '123456', errorMsg);
 
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     // Should escape angle brackets
     expect(body.text).toContain('&lt;timeout');
@@ -227,7 +243,9 @@ describe('Telegram Integration', () => {
     await sendEventNotification('test_token', '123456', events);
 
     const callArgs = mockFetch.mock.calls[0] as unknown[];
-    const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+    const body = JSON.parse(
+      (callArgs[1] as Record<string, unknown>).body as string
+    );
 
     // Should not contain raw tags that could execute (tags are stripped/escaped)
     expect(body.text).not.toContain('<img');
@@ -263,7 +281,9 @@ describe('Telegram Integration', () => {
       await sendEventNotification('test_token', '123456', events);
 
       const callArgs = mockFetch.mock.calls[0] as unknown[];
-      const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+      const body = JSON.parse(
+        (callArgs[1] as Record<string, unknown>).body as string
+      );
 
       expect(body.text).toContain('Short event title');
       expect(body.text.length).toBeLessThan(4096);
@@ -295,7 +315,9 @@ describe('Telegram Integration', () => {
       await sendEventNotification('test_token', '123456', longEvents);
 
       const callArgs = mockFetch.mock.calls[0] as unknown[];
-      const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+      const body = JSON.parse(
+        (callArgs[1] as Record<string, unknown>).body as string
+      );
 
       expect(body.text.length).toBeLessThanOrEqual(4096);
       expect(body.text).toContain('...');
@@ -322,11 +344,14 @@ describe('Telegram Integration', () => {
       // Create a message that's exactly 4096 chars
       // This requires careful calculation of the base message structure
       const baseMsg = '🩸 새로운 이벤트 안내\n\n<b>📍 테스트</b>\n';
-      const perEventTemplate = '1. TITLE\n   📅 2025.01.01 ~ 2025.01.31\n   🔗 URL\n\n';
+      const perEventTemplate =
+        '1. TITLE\n   📅 2025.01.01 ~ 2025.01.31\n   🔗 URL\n\n';
 
       // Calculate how many chars we need to fill
       const targetLength = 4096;
-      const padding = 'A'.repeat(targetLength - baseMsg.length - perEventTemplate.length + 5);
+      const padding = 'A'.repeat(
+        targetLength - baseMsg.length - perEventTemplate.length + 5
+      );
 
       const events: SiteEvent[] = [
         {
@@ -343,7 +368,9 @@ describe('Telegram Integration', () => {
       await sendEventNotification('test_token', '123456', events);
 
       const callArgs = mockFetch.mock.calls[0] as unknown[];
-      const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+      const body = JSON.parse(
+        (callArgs[1] as Record<string, unknown>).body as string
+      );
 
       // At exactly 4096, should not truncate
       if (body.text.length === 4096) {
@@ -377,7 +404,9 @@ describe('Telegram Integration', () => {
       await sendEventNotification('test_token', '123456', longEvents);
 
       const callArgs = mockFetch.mock.calls[0] as unknown[];
-      const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+      const body = JSON.parse(
+        (callArgs[1] as Record<string, unknown>).body as string
+      );
 
       // Message should be truncated
       expect(body.text.length).toBeLessThanOrEqual(4096);
@@ -414,7 +443,9 @@ describe('Telegram Integration', () => {
       await sendEventNotification('test_token', '123456', longEvents);
 
       const callArgs = mockFetch.mock.calls[0] as unknown[];
-      const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+      const body = JSON.parse(
+        (callArgs[1] as Record<string, unknown>).body as string
+      );
 
       // Message should be truncated
       expect(body.text.length).toBeLessThanOrEqual(4096);
@@ -455,7 +486,9 @@ describe('Telegram Integration', () => {
       await sendEventNotification('test_token', '123456', longEvents);
 
       const callArgs = mockFetch.mock.calls[0] as unknown[];
-      const body = JSON.parse((callArgs[1] as Record<string, unknown>).body as string);
+      const body = JSON.parse(
+        (callArgs[1] as Record<string, unknown>).body as string
+      );
 
       // Message should be truncated
       expect(body.text.length).toBeLessThanOrEqual(4096);
@@ -505,7 +538,9 @@ describe('Telegram Integration', () => {
 
       await expect(
         sendErrorNotification('test_token', '123456', 'Test error')
-      ).rejects.toThrow('Telegram API rejected error notification: Invalid chat_id');
+      ).rejects.toThrow(
+        'Telegram API rejected error notification: Invalid chat_id'
+      );
     });
 
     // TEST-AC3-NON-ERROR-THROWN

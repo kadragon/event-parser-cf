@@ -7,9 +7,9 @@
  */
 
 import { load } from 'cheerio';
-import type { SiteParser, SiteEvent } from '../types/site-parser';
-import { fetchWithTimeout } from '../utils/fetch';
 import { CONFIG } from '../config';
+import type { SiteEvent, SiteParser } from '../types/site-parser';
+import { fetchWithTimeout } from '../utils/fetch';
 
 export interface SjacEvent {
   eventId: string;
@@ -53,9 +53,11 @@ export function parseSjacEvents(html: string): SjacEvent[] {
     const $ = load(html);
 
     // Find all event rows in tbody
-    const rows = $(`${CONFIG.sjac.selectors.tableBody} ${CONFIG.sjac.selectors.tableRow}`);
+    const rows = $(
+      `${CONFIG.sjac.selectors.tableBody} ${CONFIG.sjac.selectors.tableRow}`
+    );
 
-    rows.each((index, element) => {
+    rows.each((_index, element) => {
       try {
         const $row = $(element);
 
@@ -108,7 +110,9 @@ export function parseSjacEvents(html: string): SjacEvent[] {
     });
   } catch (error) {
     console.error('Error loading SJAC HTML:', error);
-    throw new Error(`Failed to parse SJAC HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse SJAC HTML: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 
   return events;
@@ -123,7 +127,11 @@ export function parseSjacEvents(html: string): SjacEvent[] {
  */
 export async function fetchAndParseSjacEvents(): Promise<SjacEvent[]> {
   try {
-    const response = await fetchWithTimeout(CONFIG.sjac.siteUrl, {}, CONFIG.sjac.fetchTimeoutMs);
+    const response = await fetchWithTimeout(
+      CONFIG.sjac.siteUrl,
+      {},
+      CONFIG.sjac.fetchTimeoutMs
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -157,8 +165,8 @@ export class SjacParser implements SiteParser {
       siteName: this.siteName,
       eventId: event.eventId,
       title: event.title,
-      startDate: event.date,  // Ticket open date as startDate
-      endDate: event.date,    // Use same date for endDate
+      startDate: event.date, // Ticket open date as startDate
+      endDate: event.date, // Use same date for endDate
       sourceUrl: event.sourceUrl,
     }));
   }

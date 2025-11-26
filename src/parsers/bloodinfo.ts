@@ -1,8 +1,8 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 import { load } from 'cheerio';
-import { getRandomUserAgent } from '../utils/user-agent';
-import type { SiteParser, SiteEvent } from '../types/site-parser';
 import { CONFIG } from '../config';
+import type { SiteEvent, SiteParser } from '../types/site-parser';
+import { getRandomUserAgent } from '../utils/user-agent';
 
 export interface Event {
   eventId: string;
@@ -61,9 +61,14 @@ export function parseEvents(html: string, mi: number): Event[] {
           const nextId = $nextLink.attr('data-id');
 
           if (nextId === eventId) {
-            const nextText = $nextLink.find(CONFIG.bloodinfo.selectors.span).text().trim();
+            const nextText = $nextLink
+              .find(CONFIG.bloodinfo.selectors.span)
+              .text()
+              .trim();
             // Replace &nbsp; with space and clean up
-            const cleanText = nextText.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+            const cleanText = nextText
+              .replace(/&nbsp;/g, ' ')
+              .replace(/\s+/g, ' ');
 
             if (cleanText.includes('~')) {
               dateText = cleanText;
@@ -102,7 +107,9 @@ export function parseEvents(html: string, mi: number): Event[] {
     }
   } catch (error) {
     console.error('Error loading HTML:', error);
-    throw new Error(`Failed to parse HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse HTML: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 
   return events;
@@ -121,8 +128,9 @@ export async function fetchAndParseEvents(mi: number): Promise<Event[]> {
     const response = await fetch(url, {
       headers: {
         'User-Agent': getRandomUserAgent(),
-        'Referer': `${CONFIG.bloodinfo.baseUrl}/`,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Referer: `${CONFIG.bloodinfo.baseUrl}/`,
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9',
         'Cache-Control': 'no-cache',
       },
@@ -174,7 +182,9 @@ export async function fetchAllEvents(): Promise<Event[]> {
 
   const duplicateCount = allEvents.length - uniqueEvents.length;
   if (duplicateCount > 0) {
-    console.log(`Removed ${duplicateCount} duplicate event(s) across categories`);
+    console.log(
+      `Removed ${duplicateCount} duplicate event(s) across categories`
+    );
   }
 
   return uniqueEvents;
