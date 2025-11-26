@@ -1,7 +1,7 @@
 // GENERATED FROM SPEC-KTCU-PARSER-001
 // TRACE: SPEC-BRANCH-COVERAGE-001
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { parseKtcuEvents, fetchAndParseKtcuEvents } from '../src/parsers/ktcu';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fetchAndParseKtcuEvents, parseKtcuEvents } from '../src/parsers/ktcu';
 
 describe('KTCU Parser - parseKtcuEvents()', () => {
   // TEST-KTCU-001: AC-1 이벤트 HTML 파싱
@@ -126,10 +126,10 @@ describe('KTCU Parser - parseKtcuEvents()', () => {
 
     // 진행 중인 이벤트만 포함되어야 함
     expect(events.length).toBeGreaterThanOrEqual(1);
-    const activeEvent = events.find(e => e.title === '진행중인이벤트');
+    const activeEvent = events.find((e) => e.title === '진행중인이벤트');
     expect(activeEvent).toBeDefined();
     // Ended event should not be in the list
-    const endedEvent = events.find(e => e.title === '종료된이벤트');
+    const endedEvent = events.find((e) => e.title === '종료된이벤트');
     expect(endedEvent).toBeUndefined();
   });
 
@@ -249,10 +249,10 @@ describe('KTCU Parser - parseKtcuEvents()', () => {
     const events = await parseKtcuEvents(mockHtml);
 
     // 불완전한 데이터는 건너뛰어야 함
-    const incompleteEvent = events.find(e => e.title === '');
+    const incompleteEvent = events.find((e) => e.title === '');
     expect(incompleteEvent).toBeUndefined();
 
-    const completeEvent = events.find(e => e.title === '완전한이벤트');
+    const completeEvent = events.find((e) => e.title === '완전한이벤트');
     expect(completeEvent).toBeDefined();
   });
 });
@@ -362,7 +362,9 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Error Handling', () => {
     // Cheerio can handle most malformed HTML, but extremely broken input can cause issues
     const invalidHtml = null as unknown as string;
 
-    await expect(parseKtcuEvents(invalidHtml)).rejects.toThrow('Failed to parse KTCU HTML');
+    await expect(parseKtcuEvents(invalidHtml)).rejects.toThrow(
+      'Failed to parse KTCU HTML'
+    );
   });
 
   // TEST-AC5-HTTP-ERROR
@@ -373,14 +375,18 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Error Handling', () => {
       statusText: 'Internal Server Error',
     });
 
-    await expect(fetchAndParseKtcuEvents()).rejects.toThrow('HTTP 500: Internal Server Error');
+    await expect(fetchAndParseKtcuEvents()).rejects.toThrow(
+      'HTTP 500: Internal Server Error'
+    );
   });
 
   // TEST-AC6-FETCH-TIMEOUT
   it('AC-6: Should throw error on fetch timeout', async () => {
     mockFetch.mockRejectedValue(new Error('Request timeout'));
 
-    await expect(fetchAndParseKtcuEvents()).rejects.toThrow('KTCU event collection failed: Request timeout');
+    await expect(fetchAndParseKtcuEvents()).rejects.toThrow(
+      'KTCU event collection failed: Request timeout'
+    );
   });
 
   // TEST-AC7-PARSING-ERROR
@@ -390,7 +396,9 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Error Handling', () => {
       text: async () => null as unknown as string,
     });
 
-    await expect(fetchAndParseKtcuEvents()).rejects.toThrow('Failed to parse KTCU HTML');
+    await expect(fetchAndParseKtcuEvents()).rejects.toThrow(
+      'Failed to parse KTCU HTML'
+    );
   });
 });
 
@@ -420,11 +428,11 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Edge Cases for Branch Coverage', () => 
     const events = await parseKtcuEvents(mockHtml);
 
     // Only the valid event should be parsed
-    const validEvent = events.find(e => e.title === 'Valid Event');
+    const validEvent = events.find((e) => e.title === 'Valid Event');
     expect(validEvent).toBeDefined();
 
     // Invalid date event should be skipped
-    const invalidEvent = events.find(e => e.title === 'Invalid Date Format');
+    const invalidEvent = events.find((e) => e.title === 'Invalid Date Format');
     expect(invalidEvent).toBeUndefined();
   });
 
@@ -452,11 +460,11 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Edge Cases for Branch Coverage', () => 
     const events = await parseKtcuEvents(mockHtml);
 
     // Event without title should be skipped
-    const noTitleEvent = events.find(e => e.title === '');
+    const noTitleEvent = events.find((e) => e.title === '');
     expect(noTitleEvent).toBeUndefined();
 
     // Event with title should be included
-    const hasTitleEvent = events.find(e => e.title === 'Has Title');
+    const hasTitleEvent = events.find((e) => e.title === 'Has Title');
     expect(hasTitleEvent).toBeDefined();
   });
 
@@ -484,11 +492,11 @@ describe('SPEC-BRANCH-COVERAGE-001: KTCU Edge Cases for Branch Coverage', () => 
     const events = await parseKtcuEvents(mockHtml);
 
     // Event without date should be skipped
-    const noDateEvent = events.find(e => e.title === 'No Date Event');
+    const noDateEvent = events.find((e) => e.title === 'No Date Event');
     expect(noDateEvent).toBeUndefined();
 
     // Event with date should be included
-    const hasDateEvent = events.find(e => e.title === 'Has Date');
+    const hasDateEvent = events.find((e) => e.title === 'Has Date');
     expect(hasDateEvent).toBeDefined();
   });
 

@@ -1,5 +1,5 @@
 // GENERATED FROM SPEC-SJAC-PARSER-001
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseSjacEvents } from '../src/parsers/sjac';
 
 describe('SJAC Parser - parseSjacEvents()', () => {
@@ -53,7 +53,9 @@ describe('SJAC Parser - parseSjacEvents()', () => {
 
     const events = parseSjacEvents(mockHtml);
 
-    expect(events[0].title).toBe('겨울밤의 소프라노&테너와 함께하는 12월 야민락 콘서트');
+    expect(events[0].title).toBe(
+      '겨울밤의 소프라노&테너와 함께하는 12월 야민락 콘서트'
+    );
   });
 
   // TEST-SJAC-003: AC-3 새 게시물 마커 제거
@@ -306,7 +308,9 @@ describe('SJAC Parser - parseSjacEvents()', () => {
 
     const events = parseSjacEvents(mockHtml);
 
-    expect(events[0].sourceUrl).toBe('https://www.sjac.or.kr/base/nrr/performance/read?performanceNo=585&menuLevel=2&menuNo=76');
+    expect(events[0].sourceUrl).toBe(
+      'https://www.sjac.or.kr/base/nrr/performance/read?performanceNo=585&menuLevel=2&menuNo=76'
+    );
   });
 
   // TEST-SJAC-012: 상대 URL을 절대 URL로 변환
@@ -332,6 +336,8 @@ describe('SJAC Parser - parseSjacEvents()', () => {
 
     const events = parseSjacEvents(mockHtml);
 
-    expect(events[0].sourceUrl).toBe('https://www.sjac.or.kr/base/nrr/performance/read?performanceNo=585&menuLevel=2&menuNo=76');
+    expect(events[0].sourceUrl).toBe(
+      'https://www.sjac.or.kr/base/nrr/performance/read?performanceNo=585&menuLevel=2&menuNo=76'
+    );
   });
 });

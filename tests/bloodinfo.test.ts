@@ -1,7 +1,12 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 // TRACE: SPEC-BRANCH-COVERAGE-001
-import { describe, it, expect, vi } from 'vitest';
-import { parseEvents, fetchAllEvents, fetchAndParseEvents, BloodinfoParser } from '../src/parsers/bloodinfo';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  BloodinfoParser,
+  fetchAllEvents,
+  fetchAndParseEvents,
+  parseEvents,
+} from '../src/parsers/bloodinfo';
 
 describe('HTML Parser - parseEvents()', () => {
   // TEST-AC1-NEW-EVENTS
@@ -19,7 +24,8 @@ describe('HTML Parser - parseEvents()', () => {
       title: '혈액 수급 지원 프로모션',
       startDate: '2025.01.01',
       endDate: '2025.12.31',
-      sourceUrl: 'https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=1301',
+      sourceUrl:
+        'https://www.bloodinfo.net/knrcbs/pr/promtn/progrsPromtnList.do?type=A&mi=1301',
     });
   });
 
@@ -118,7 +124,7 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
     const consoleLogSpy = vi.spyOn(console, 'log');
 
     // Mock responses - same eventId "duplicate-123" in both categories
-    mockFetch.mockImplementation((url: string) => {
+    mockFetch.mockImplementation((_url: string) => {
       const mockHtml = `
         <a href="javascript:" data-id="duplicate-123" class="promtnInfoBtn"><span>Duplicate Event</span></a>
         <a href="javascript:" data-id="duplicate-123" class="promtnInfoBtn"><span>2025.01.01&nbsp;~&nbsp;2025.01.31</span></a>
@@ -177,7 +183,9 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
     const mockFetch = vi.fn();
     global.fetch = mockFetch;
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     mockFetch.mockRejectedValue(new Error('Network error'));
 
@@ -193,7 +201,9 @@ describe('fetchAllEvents() - Category Filter and Deduplication', () => {
     const mockFetch = vi.fn();
     global.fetch = mockFetch;
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     // First call (mi=1301) fails, second call (mi=1303) succeeds
     mockFetch
@@ -334,6 +344,8 @@ describe('SPEC-BRANCH-COVERAGE-001: Edge Cases for Branch Coverage', () => {
       statusText: 'Not Found',
     } as Response);
 
-    await expect(fetchAndParseEvents(1301)).rejects.toThrow('HTTP 404: Not Found');
+    await expect(fetchAndParseEvents(1301)).rejects.toThrow(
+      'HTTP 404: Not Found'
+    );
   });
 });

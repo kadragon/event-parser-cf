@@ -1,9 +1,9 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 
-import { BloodinfoParser, KtcuParser, SjacParser } from './parsers';
 import { filterNewEvents, markEventAsSent } from './kv';
-import { sendEventNotification, sendErrorNotification } from './telegram';
-import type { SiteParser, SiteEvent } from './types/site-parser';
+import { BloodinfoParser, KtcuParser, SjacParser } from './parsers';
+import { sendErrorNotification, sendEventNotification } from './telegram';
+import type { SiteEvent, SiteParser } from './types/site-parser';
 
 interface Env {
   EVENTS_KV: KVNamespace;
@@ -29,7 +29,10 @@ const siteParserRegistry: SiteParser[] = [
  * Main worker handler for scheduled events (cron)
  * Fetches events from all configured sites, filters new ones, and sends Telegram notification
  */
-async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
+async function handleScheduled(
+  _event: ScheduledEvent,
+  env: Env
+): Promise<void> {
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const chatId = env.TELEGRAM_CHAT_ID;
 
@@ -37,19 +40,33 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
 
   try {
     // Step 1: Fetch events from all registered site parsers in parallel
-    console.log(`Step 1: Fetching events from ${siteParserRegistry.length} site(s) in parallel...`);
+    console.log(
+      `Step 1: Fetching events from ${siteParserRegistry.length} site(s) in parallel...`
+    );
 
     const parserResults = await Promise.allSettled(
       siteParserRegistry.map(async (parser) => {
         try {
-          console.log(`  Fetching from ${parser.siteName} (${parser.siteId})...`);
+          console.log(
+            `  Fetching from ${parser.siteName} (${parser.siteId})...`
+          );
           const events = await parser.fetchAndParse();
-          console.log(`  Got ${events.length} event(s) from ${parser.siteName}`);
+          console.log(
+            `  Got ${events.length} event(s) from ${parser.siteName}`
+          );
           return { parser, events, status: 'success' as const };
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          console.error(`  Error fetching from ${parser.siteName}: ${errorMsg}`);
-          return { parser, events: [], status: 'failed' as const, error: errorMsg };
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
+          console.error(
+            `  Error fetching from ${parser.siteName}: ${errorMsg}`
+          );
+          return {
+            parser,
+            events: [],
+            status: 'failed' as const,
+            error: errorMsg,
+          };
         }
       })
     );
@@ -76,7 +93,10 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
     console.log(`Fetched ${allEvents.length} total events from all sites`);
 
     // Step 2.5: Check if all parsers failed
-    if (allEvents.length === 0 && parserErrors.length === siteParserRegistry.length) {
+    if (
+      allEvents.length === 0 &&
+      parserErrors.length === siteParserRegistry.length
+    ) {
       // All parsers failed - aggregate errors and send alert
       console.error(`All ${siteParserRegistry.length} parser(s) failed!`);
 
@@ -91,7 +111,10 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
         await sendErrorNotification(botToken, chatId, message);
         console.log('Sent all-parser-failure alert to Telegram');
       } catch (telegramError) {
-        console.error('Failed to send all-parser-failure alert:', telegramError);
+        console.error(
+          'Failed to send all-parser-failure alert:',
+          telegramError
+        );
       }
 
       // Return early since there's nothing to process
@@ -111,15 +134,26 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
       console.log('Step 3: Sending Telegram notification...');
 
       // Get full event details for events marked as new
-      const newEventIds = new Set(newEvents.map((e) => `${e.siteId}:${e.eventId}`));
-      const eventsToSend = allEvents.filter((e) => newEventIds.has(`${e.siteId}:${e.eventId}`));
+      const newEventIds = new Set(
+        newEvents.map((e) => `${e.siteId}:${e.eventId}`)
+      );
+      const eventsToSend = allEvents.filter((e) =>
+        newEventIds.has(`${e.siteId}:${e.eventId}`)
+      );
 
       await sendEventNotification(botToken, chatId, eventsToSend);
 
       // Step 4: Mark all sent events in KV Store (parallel with error handling)
       console.log('Step 4: Marking events as sent in KV Store...');
       const markResults = await Promise.allSettled(
-        eventsToSend.map((event) => markEventAsSent(env.EVENTS_KV, event.siteId, event.eventId, event.title))
+        eventsToSend.map((event) =>
+          markEventAsSent(
+            env.EVENTS_KV,
+            event.siteId,
+            event.eventId,
+            event.title
+          )
+        )
       );
 
       // Log individual results
@@ -131,7 +165,9 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
           console.log(`  ✓ Marked "${event.title}" as sent`);
           successCount++;
         } else {
-          console.error(`  ✗ Failed to mark "${event.title}" as sent: ${result.reason}`);
+          console.error(
+            `  ✗ Failed to mark "${event.title}" as sent: ${result.reason}`
+          );
           failureCount++;
         }
       });
@@ -165,7 +201,11 @@ async function handleScheduled(event: ScheduledEvent, env: Env): Promise<void> {
  * Export the scheduled handler
  */
 export default {
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(
+    event: ScheduledEvent,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
     ctx.waitUntil(handleScheduled(event, env));
   },
 };

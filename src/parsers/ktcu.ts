@@ -8,10 +8,10 @@
  */
 
 import { load } from 'cheerio';
-import type { SiteParser, SiteEvent } from '../types/site-parser';
+import { CONFIG } from '../config';
+import type { SiteEvent, SiteParser } from '../types/site-parser';
 import { fetchWithTimeout } from '../utils/fetch';
 import { normalizeText } from '../utils/sanitize';
-import { CONFIG } from '../config';
 
 /**
  * Generate SHA-256 hash of normalized title for eventId
@@ -26,7 +26,9 @@ async function generateTitleHash(title: string): Promise<string> {
   const data = encoder.encode(normalized);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
   return hashHex.substring(0, 16); // Use first 16 chars for shorter key
 }
 
@@ -39,19 +41,6 @@ export interface KtcuEvent {
 }
 
 /**
- * Extract event ID from onclick attribute
- * Format: fn_viewEvent('eventId')
- *
- * @param onclickAttr - onclick attribute value
- * @returns Event ID or empty string
- */
-function extractEventIdFromOnclick(onclickAttr: string | undefined): string {
-  if (!onclickAttr) return '';
-  const match = onclickAttr.match(/fn_viewEvent\('([^']+)'\)/);
-  return match ? match[1] : '';
-}
-
-/**
  * Parse date range from KTCU format
  * Format: YYYY-MM-DD(요일) ~ YYYY-MM-DD(요일)
  * Output: { startDate: YYYY.MM.DD, endDate: YYYY.MM.DD }
@@ -59,13 +48,17 @@ function extractEventIdFromOnclick(onclickAttr: string | undefined): string {
  * @param dateRangeText - Raw date range text
  * @returns { startDate, endDate } in YYYY.MM.DD format
  */
-function parseDateRange(dateRangeText: string): { startDate: string; endDate: string } | null {
+function parseDateRange(
+  dateRangeText: string
+): { startDate: string; endDate: string } | null {
   // Remove non-breaking spaces and normalize
   const normalized = dateRangeText.replace(/&nbsp;/g, ' ').trim();
 
   // Pattern: YYYY-MM-DD(요일) ~ YYYY-MM-DD(요일)
   // Also handle case where there's no parentheses (day of week)
-  const match = normalized.match(/(\d{4})-(\d{2})-(\d{2})(?:\([^)]+\))?\s*~\s*(\d{4})-(\d{2})-(\d{2})(?:\([^)]+\))?/);
+  const match = normalized.match(
+    /(\d{4})-(\d{2})-(\d{2})(?:\([^)]+\))?\s*~\s*(\d{4})-(\d{2})-(\d{2})(?:\([^)]+\))?/
+  );
 
   if (!match) {
     return null;
@@ -118,7 +111,7 @@ export async function parseKtcuEvents(html: string): Promise<KtcuEvent[]> {
     // Process each element and collect promises
     const eventPromises: Promise<KtcuEvent | null>[] = [];
 
-    eventElements.each((index, element) => {
+    eventElements.each((_index, element) => {
       const promise = (async () => {
         try {
           const $el = $(element);
@@ -174,14 +167,16 @@ export async function parseKtcuEvents(html: string): Promise<KtcuEvent[]> {
     const parsedEvents = await Promise.all(eventPromises);
 
     // Filter out nulls and add to events array
-    parsedEvents.forEach(event => {
+    parsedEvents.forEach((event) => {
       if (event !== null) {
         events.push(event);
       }
     });
   } catch (error) {
     console.error('Error loading KTCU HTML:', error);
-    throw new Error(`Failed to parse KTCU HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse KTCU HTML: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 
   return events;
@@ -196,7 +191,11 @@ export async function parseKtcuEvents(html: string): Promise<KtcuEvent[]> {
  */
 export async function fetchAndParseKtcuEvents(): Promise<KtcuEvent[]> {
   try {
-    const response = await fetchWithTimeout(CONFIG.ktcu.siteUrl, {}, CONFIG.ktcu.fetchTimeoutMs);
+    const response = await fetchWithTimeout(
+      CONFIG.ktcu.siteUrl,
+      {},
+      CONFIG.ktcu.fetchTimeoutMs
+    );
 
     if (!response.ok) {
       throw new Error(

@@ -76,7 +76,7 @@ export function stripHtmlForPlainText(html: string): string {
   // SECURITY: Repeat tag removal to handle nested/encoded tags
   // This prevents attacks like: <script<script>>alert("xss")</script>
   // where the inner <script> is revealed after first removal
-  let previous;
+  let previous: string;
   do {
     previous = plain;
     plain = plain.replace(/<[^>]+>/g, '');

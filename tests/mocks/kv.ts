@@ -25,7 +25,9 @@ export function createMockKV(): KVNamespace {
  * @param data - Record of key-value pairs to return from get()
  * @returns A mocked KVNamespace that returns predefined data
  */
-export function createMockKVWithData(data: Record<string, string>): KVNamespace {
+export function createMockKVWithData(
+  data: Record<string, string>
+): KVNamespace {
   return {
     get: vi.fn((key: string) => Promise.resolve(data[key] || null)),
     put: vi.fn(),

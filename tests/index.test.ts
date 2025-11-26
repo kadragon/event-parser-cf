@@ -1,9 +1,13 @@
 // GENERATED FROM SPEC-PARSER-ERROR-AGGREGATION-001
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { SiteParser, SiteEvent } from '../src/types/site-parser';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SiteEvent, SiteParser } from '../src/types/site-parser';
 
 // Mock implementations
-const mockSiteParser = (siteName: string, siteId: string, behavior: 'success' | 'failure') => ({
+const mockSiteParser = (
+  siteName: string,
+  siteId: string,
+  behavior: 'success' | 'failure'
+) => ({
   siteName,
   siteId,
   fetchAndParse: async () => {
@@ -35,7 +39,10 @@ describe('Event Collection - Parser Error Handling', () => {
     const parser1 = mockSiteParser('Site A', 'siteA', 'failure') as SiteParser;
     const parser2 = mockSiteParser('Site B', 'siteB', 'failure') as SiteParser;
 
-    const results = await Promise.allSettled([parser1.fetchAndParse(), parser2.fetchAndParse()]);
+    const results = await Promise.allSettled([
+      parser1.fetchAndParse(),
+      parser2.fetchAndParse(),
+    ]);
 
     // Verify both failed
     const failures = results.filter((r) => r.status === 'rejected');
@@ -60,7 +67,10 @@ describe('Event Collection - Parser Error Handling', () => {
     const parser1 = mockSiteParser('Site A', 'siteA', 'success') as SiteParser;
     const parser2 = mockSiteParser('Site B', 'siteB', 'failure') as SiteParser;
 
-    const results = await Promise.allSettled([parser1.fetchAndParse(), parser2.fetchAndParse()]);
+    const results = await Promise.allSettled([
+      parser1.fetchAndParse(),
+      parser2.fetchAndParse(),
+    ]);
 
     // Collect successful events
     const allEvents: SiteEvent[] = [];

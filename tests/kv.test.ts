@@ -1,7 +1,12 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 // TRACE: SPEC-KV-COVERAGE-001
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { isEventSent, markEventAsSent, getSentEvents, filterNewEvents } from '../src/kv';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  filterNewEvents,
+  getSentEvents,
+  isEventSent,
+  markEventAsSent,
+} from '../src/kv';
 import { createMockKV } from './mocks/kv';
 
 // Mock KV Store with proper typing
@@ -14,7 +19,9 @@ describe('KV Store Operations', () => {
 
   // TEST-AC2-DUPLICATE-CHECK
   it('AC-2: Should return true if event was previously sent', async () => {
-    vi.mocked(mockKV.get).mockResolvedValue(JSON.stringify({ sentAt: '2025-01-01T00:00:00Z', title: 'Test Event' }));
+    vi.mocked(mockKV.get).mockResolvedValue(
+      JSON.stringify({ sentAt: '2025-01-01T00:00:00Z', title: 'Test Event' })
+    );
 
     const result = await isEventSent(mockKV, 'bloodinfo', '12345');
 
@@ -61,7 +68,12 @@ describe('KV Store Operations', () => {
   it('AC-3: Should handle KV write failures gracefully', async () => {
     vi.mocked(mockKV.put).mockRejectedValue(new Error('KV write failed'));
 
-    const result = await markEventAsSent(mockKV, 'bloodinfo', '222', 'Test').catch((err: Error) => err.message);
+    const result = await markEventAsSent(
+      mockKV,
+      'bloodinfo',
+      '222',
+      'Test'
+    ).catch((err: Error) => err.message);
 
     expect(result).toBe('KV write failed');
   });

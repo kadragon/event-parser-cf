@@ -15,7 +15,11 @@ export interface SentRecord {
  * @param eventId - Event identifier
  * @returns true if event was sent, false otherwise
  */
-export async function isEventSent(kv: KVNamespace, siteId: string, eventId: string): Promise<boolean> {
+export async function isEventSent(
+  kv: KVNamespace,
+  siteId: string,
+  eventId: string
+): Promise<boolean> {
   try {
     const key = `${CONFIG.kv.keyPrefix}${siteId}:${eventId}`;
     const record = await kv.get(key);
@@ -35,7 +39,12 @@ export async function isEventSent(kv: KVNamespace, siteId: string, eventId: stri
  * @param eventId - Event identifier
  * @param title - Event title
  */
-export async function markEventAsSent(kv: KVNamespace, siteId: string, eventId: string, title: string): Promise<void> {
+export async function markEventAsSent(
+  kv: KVNamespace,
+  siteId: string,
+  eventId: string,
+  title: string
+): Promise<void> {
   try {
     const key = `${CONFIG.kv.keyPrefix}${siteId}:${eventId}`;
     const record: SentRecord = {
@@ -87,7 +96,10 @@ export async function getSentEvents(kv: KVNamespace): Promise<string[]> {
  * @returns Only new events (in original order)
  * TRACE: SPEC-KV-PARALLEL-READS-001
  */
-export async function filterNewEvents(kv: KVNamespace, events: Array<{ siteId: string; eventId: string }>): Promise<Array<{ siteId: string; eventId: string }>> {
+export async function filterNewEvents(
+  kv: KVNamespace,
+  events: Array<{ siteId: string; eventId: string }>
+): Promise<Array<{ siteId: string; eventId: string }>> {
   if (events.length === 0) {
     return [];
   }

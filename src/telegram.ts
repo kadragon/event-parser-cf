@@ -1,9 +1,10 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 // Trace: SPEC-TELEGRAM-LENGTH-001
-import type { SiteEvent } from './types/site-parser';
-import { sanitizeText, stripHtmlForPlainText } from './utils/sanitize';
-import { fetchWithTimeout } from './utils/fetch';
+
 import { CONFIG } from './config';
+import type { SiteEvent } from './types/site-parser';
+import { fetchWithTimeout } from './utils/fetch';
+import { sanitizeText, stripHtmlForPlainText } from './utils/sanitize';
 
 /**
  * Build Telegram message from events
@@ -12,7 +13,10 @@ import { CONFIG } from './config';
  * @param events - SiteEvents to notify about
  * @returns Object with message text (max 4096 chars) and truncation flag
  */
-function buildEventMessage(events: SiteEvent[]): { text: string; isTruncated: boolean } {
+function buildEventMessage(events: SiteEvent[]): {
+  text: string;
+  isTruncated: boolean;
+} {
   if (events.length === 0) {
     return { text: '새로운 이벤트가 없습니다.', isTruncated: false };
   }
@@ -54,7 +58,7 @@ function buildEventMessage(events: SiteEvent[]): { text: string; isTruncated: bo
     const plainMessage = stripHtmlForPlainText(message);
 
     return {
-      text: plainMessage.substring(0, CONFIG.telegram.safeTruncateLength) + '...',
+      text: `${plainMessage.substring(0, CONFIG.telegram.safeTruncateLength)}...`,
       isTruncated: true,
     };
   }
@@ -71,7 +75,11 @@ function buildEventMessage(events: SiteEvent[]): { text: string; isTruncated: bo
  * @param events - SiteEvents to notify about
  * @throws Error if notification fails
  */
-export async function sendEventNotification(botToken: string, chatId: string, events: SiteEvent[]): Promise<void> {
+export async function sendEventNotification(
+  botToken: string,
+  chatId: string,
+  events: SiteEvent[]
+): Promise<void> {
   const { text, isTruncated } = buildEventMessage(events);
   const apiUrl = `${CONFIG.telegram.apiBaseUrl}/bot${botToken}/sendMessage`;
 
@@ -107,7 +115,10 @@ export async function sendEventNotification(botToken: string, chatId: string, ev
       );
     }
 
-    const data = (await response.json()) as { ok: boolean; description?: string };
+    const data = (await response.json()) as {
+      ok: boolean;
+      description?: string;
+    };
     if (!data.ok) {
       throw new Error(
         `Telegram API rejected request: ${data.description || 'unknown error'}`
@@ -131,7 +142,11 @@ export async function sendEventNotification(botToken: string, chatId: string, ev
  * @param errorMessage - Error description
  * @throws Error if notification fails
  */
-export async function sendErrorNotification(botToken: string, chatId: string, errorMessage: string): Promise<void> {
+export async function sendErrorNotification(
+  botToken: string,
+  chatId: string,
+  errorMessage: string
+): Promise<void> {
   const escapedErrorMessage = sanitizeText(errorMessage);
   const message = `⚠️ 이벤트 수집 오류\n\n오류 메시지:\n${escapedErrorMessage}\n\n발생 시간: ${new Date().toISOString()}`;
   const apiUrl = `${CONFIG.telegram.apiBaseUrl}/bot${botToken}/sendMessage`;
@@ -161,7 +176,10 @@ export async function sendErrorNotification(botToken: string, chatId: string, er
       );
     }
 
-    const data = (await response.json()) as { ok: boolean; description?: string };
+    const data = (await response.json()) as {
+      ok: boolean;
+      description?: string;
+    };
     if (!data.ok) {
       throw new Error(
         `Telegram API rejected error notification: ${data.description || 'unknown error'}`
