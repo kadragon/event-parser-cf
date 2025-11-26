@@ -3,3 +3,8 @@
   title: "Migrate ESLint to Biome"
   status: completed
   timestamp: "2025-11-26T21:25:00"
+- task_id: TASK-008
+  spec_id: SPEC-ci-workflow-1
+  title: "Setup GitHub Actions CI"
+  status: completed
+  timestamp: "2025-11-26T21:30:00"
