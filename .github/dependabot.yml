@@ -13,3 +13,10 @@ updates:
       - dependency-name: "user-agents"
         update-types:
           - "version-update:semver-patch"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
