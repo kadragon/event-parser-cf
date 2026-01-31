@@ -88,6 +88,35 @@ export const CONFIG = {
   },
 
   /**
+   * Sejong Lifelong Education Institute (life.sje.go.kr) parser configuration
+   */
+  lifeSje: {
+    /** Base URL for life.sje.go.kr */
+    baseUrl: 'https://life.sje.go.kr',
+
+    /** API endpoint path */
+    apiPath: '/api/homepageprogramlist',
+
+    /** Manage code required by API */
+    manageCode: '150018',
+
+    /** 공연 및 전시 대분류 */
+    programMajorCategory: '3',
+
+    /** 접수중(신청중) 상태 필터 */
+    programStatusOpen: '1and2',
+
+    /** Default page size */
+    pageSize: '60',
+
+    /** Fetch timeout in milliseconds */
+    fetchTimeoutMs: 10000,
+
+    /** Program detail page path */
+    programDetailPath: '/community/events/program-detail',
+  },
+
+  /**
    * Telegram bot configuration
    */
   telegram: {

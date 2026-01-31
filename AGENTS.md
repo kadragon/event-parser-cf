@@ -39,6 +39,22 @@ Framework: TDD (Test-Driven Development)
   condensed here; full historical docs remain in git history before commit
   `995286f9`.
 
+## 2026-01-31
+
+### Decision/Learning
+
+life.sje.go.kr uses `POST /api/homepageprogramlist` with `manage_code=150018`,
+`program_major_category=3` for 공연/전시, and `program_status=1and2` for 신청중.
+Response items expose `PROGRAM_STATUS` as `'1'` or `'2'` when open.
+
+### Reason
+
+These parameters are required to fetch only 공연/전시 접수중 programs reliably.
+
+### Impact
+
+Use the API response for parsing and filter on `PROGRAM_STATUS` in the parser.
+
 ## Tasks
 
 Active/Backlog: None

@@ -1,7 +1,12 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 
 import { filterNewEvents, markEventAsSent } from './kv';
-import { BloodinfoParser, KtcuParser, SjacParser } from './parsers';
+import {
+  BloodinfoParser,
+  KtcuParser,
+  LifeSjeParser,
+  SjacParser,
+} from './parsers';
 import { sendErrorNotification, sendEventNotification } from './telegram';
 import type { SiteEvent, SiteParser } from './types/site-parser';
 
@@ -23,6 +28,7 @@ const siteParserRegistry: SiteParser[] = [
   new BloodinfoParser(),
   new KtcuParser(),
   new SjacParser(),
+  new LifeSjeParser(),
 ];
 
 /**
