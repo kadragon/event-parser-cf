@@ -61,11 +61,9 @@ export function parseLifeSjeEvents(
     return [];
   }
 
-  const events: LifeSjeEvent[] = [];
-
-  for (const program of response.RESULT_LIST) {
+  return response.RESULT_LIST.flatMap((program) => {
     if (!isOpenStatus(program.PROGRAM_STATUS)) {
-      continue;
+      return [];
     }
 
     const eventId = program.REC_KEY?.trim() || '';
@@ -74,21 +72,21 @@ export function parseLifeSjeEvents(
     const endDate = normalizeDate(program.PROGRAM_APPLY_END_DATE);
 
     if (!eventId || !title || !startDate || !endDate) {
-      continue;
+      return [];
     }
 
-    const sourceUrl = `${CONFIG.lifeSje.baseUrl}/community/events/program-detail/${eventId}`;
+    const sourceUrl = `${CONFIG.lifeSje.baseUrl}${CONFIG.lifeSje.programDetailPath}/${eventId}`;
 
-    events.push({
-      eventId,
-      title,
-      startDate,
-      endDate,
-      sourceUrl,
-    });
-  }
-
-  return events;
+    return [
+      {
+        eventId,
+        title,
+        startDate,
+        endDate,
+        sourceUrl,
+      },
+    ];
+  });
 }
 
 export async function fetchAndParseLifeSjeEvents(): Promise<LifeSjeEvent[]> {

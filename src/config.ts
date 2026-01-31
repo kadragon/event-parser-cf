@@ -111,6 +111,9 @@ export const CONFIG = {
 
     /** Fetch timeout in milliseconds */
     fetchTimeoutMs: 10000,
+
+    /** Program detail page path */
+    programDetailPath: '/community/events/program-detail',
   },
 
   /**
