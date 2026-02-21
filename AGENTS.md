@@ -21,7 +21,7 @@ Framework: TDD (Test-Driven Development)
 
 - **Runtime**: Cloudflare Workers with a scheduled cron (daily, KST 00:00)
   that triggers the event collection pipeline.
-- **Parsers**: Site-specific parsers (Bloodinfo, KTCU, SJAC) implement a
+- **Parsers**: Site-specific parsers (KTCU, SJAC, Life SJE) implement a
   `SiteParser` interface with `fetchAndParse()` returning `SiteEvent[]`.
   Parsers use `fetchWithTimeout()` and `cheerio` to extract event fields.
 - **Aggregation**: `handleScheduled()` runs parsers via

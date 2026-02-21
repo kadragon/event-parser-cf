@@ -3,7 +3,6 @@
  * Import and export all site parsers here for easy registration
  */
 
-export { BloodinfoParser } from './bloodinfo';
 export { KtcuParser } from './ktcu';
 export { LifeSjeParser } from './life-sje';
 export { SjacParser } from './sjac';

@@ -11,7 +11,7 @@ export interface SentRecord {
  * Check if an event was previously sent
  *
  * @param kv - Cloudflare KV namespace
- * @param siteId - Site identifier (e.g., 'bloodinfo', 'ktcu')
+ * @param siteId - Site identifier (e.g., 'ktcu', 'sjac')
  * @param eventId - Event identifier
  * @returns true if event was sent, false otherwise
  */
@@ -35,7 +35,7 @@ export async function isEventSent(
  * Mark an event as sent by storing it in KV
  *
  * @param kv - Cloudflare KV namespace
- * @param siteId - Site identifier (e.g., 'bloodinfo', 'ktcu')
+ * @param siteId - Site identifier (e.g., 'ktcu', 'sjac')
  * @param eventId - Event identifier
  * @param title - Event title
  */
