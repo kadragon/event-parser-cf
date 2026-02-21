@@ -24,22 +24,22 @@ describe('Telegram Integration', () => {
 
     const events: SiteEvent[] = [
       {
-        siteId: 'bloodinfo',
-        siteName: '혈액정보',
+        siteId: 'ktcu',
+        siteName: '한국교직원공제회',
         eventId: '111',
         title: '이벤트 1',
         startDate: '2025.01.01',
         endDate: '2025.01.31',
-        sourceUrl: 'https://www.bloodinfo.net/?mi=1301',
+        sourceUrl: 'https://www.ktcu.or.kr/PPW-WFA-100101',
       },
       {
-        siteId: 'bloodinfo',
-        siteName: '혈액정보',
+        siteId: 'ktcu',
+        siteName: '한국교직원공제회',
         eventId: '222',
         title: '이벤트 2',
         startDate: '2025.02.01',
         endDate: '2025.02.28',
-        sourceUrl: 'https://www.bloodinfo.net/?mi=1302',
+        sourceUrl: 'https://www.ktcu.or.kr/PPW-WFA-100101',
       },
     ];
 
@@ -66,13 +66,13 @@ describe('Telegram Integration', () => {
 
     const events: SiteEvent[] = [
       {
-        siteId: 'bloodinfo',
-        siteName: '혈액정보',
+        siteId: 'ktcu',
+        siteName: '한국교직원공제회',
         eventId: '999',
         title: 'Test Event',
         startDate: '2025.01.01',
         endDate: '2025.01.31',
-        sourceUrl: 'https://www.bloodinfo.net/?mi=1301',
+        sourceUrl: 'https://www.ktcu.or.kr/PPW-WFA-100101',
       },
     ];
 
@@ -83,7 +83,7 @@ describe('Telegram Integration', () => {
       (callArgs[1] as Record<string, unknown>).body as string
     );
 
-    expect(body.text).toContain('https://www.bloodinfo.net/?mi=1301');
+    expect(body.text).toContain('https://www.ktcu.or.kr/PPW-WFA-100101');
   });
 
   // TEST-AC4-ERROR-NOTIFICATION

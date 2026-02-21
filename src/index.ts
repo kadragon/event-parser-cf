@@ -1,12 +1,7 @@
 // GENERATED FROM SPEC-EVENT-COLLECTOR-001
 
 import { filterNewEvents, markEventAsSent } from './kv';
-import {
-  BloodinfoParser,
-  KtcuParser,
-  LifeSjeParser,
-  SjacParser,
-} from './parsers';
+import { KtcuParser, LifeSjeParser, SjacParser } from './parsers';
 import { sendErrorNotification, sendEventNotification } from './telegram';
 import type { SiteEvent, SiteParser } from './types/site-parser';
 
@@ -25,7 +20,6 @@ interface ScheduledEvent {
  * TRACE: SPEC-KTCU-PARSER-001, SPEC-SJAC-PARSER-001
  */
 const siteParserRegistry: SiteParser[] = [
-  new BloodinfoParser(),
   new KtcuParser(),
   new SjacParser(),
   new LifeSjeParser(),

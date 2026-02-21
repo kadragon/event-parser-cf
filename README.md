@@ -2,7 +2,7 @@
 
 다양한 웹사이트의 새로운 이벤트를 자동으로 수집하여 Telegram으로 매일 통지하는 Cloudflare Workers 애플리케이션입니다.
 
-현재 지원: **혈액정보 (bloodinfo.net)**, **한국교직원공제회 (KTCU)**, **세종예술의전당 (SJAC)**
+현재 지원: **한국교직원공제회 (KTCU)**, **세종예술의전당 (SJAC)**, **세종특별자치시교육청 평생교육원 (life.sje.go.kr)**
 확장 가능: **기타 사이트** (플러그인 구조)
 
 ## 기능
@@ -27,7 +27,7 @@
 ## 프로젝트 구조
 
 ```text
-bloodinfo-event-parser-cf/
+event-parser-cf/
 ├── .githooks/
 │   └── pre-commit                  # 사전 커밋 검증 (TypeScript 타입 체크)
 ├── src/
@@ -35,8 +35,9 @@ bloodinfo-event-parser-cf/
 │   │   └── site-parser.ts          # SiteParser 인터페이스 정의
 │   ├── parsers/
 │   │   ├── index.ts                # 파서 레지스트리
-│   │   ├── bloodinfo.ts            # Bloodinfo 파서 (+ BloodinfoParser 클래스)
-│   │   ├── ktcu.ts                 # KTCU 파서 (예제)
+│   │   ├── ktcu.ts                 # KTCU 파서
+│   │   ├── sjac.ts                 # SJAC 파서
+│   │   ├── life-sje.ts             # life.sje.go.kr 파서
 │   │   └── [새사이트].ts           # 추가 파서들
 │   ├── index.ts                    # 메인 Worker 진입점 (파서 오케스트레이션)
 │   ├── kv.ts                       # KV Store 관리 (사이트별 키)
@@ -55,7 +56,7 @@ bloodinfo-event-parser-cf/
 
 ```bash
 git clone <repo>
-cd bloodinfo-event-parser-cf
+cd event-parser-cf
 npm install
 ```
 
@@ -122,9 +123,9 @@ cron = "0 3 * * *"  # 매일 03:00 UTC (KST 기준 12:00)
 1. 매일 12:00 KST 크론 트리거 실행
    ↓
 2. 등록된 모든 사이트 파서에서 이벤트 수집
-   - BloodinfoParser (bloodinfo.net)
    - KtcuParser (ktcu.or.kr)
    - SjacParser (sjac.or.kr)
+   - LifeSjeParser (life.sje.go.kr)
    - [새로운 파서들...]
    ↓
 3. KV Store에서 이미 전송한 이벤트 확인 (sent:{siteId}:{eventId})
@@ -147,24 +148,20 @@ cron = "0 3 * * *"  # 매일 03:00 UTC (KST 기준 12:00)
 ```text
 🩸 새로운 이벤트 안내
 
-📍 혈액정보
-1. 이벤트 제목 1
-   📅 2025.01.01 ~ 2025.01.31
-   🔗 https://www.bloodinfo.net/...?mi=1301
-
-2. 이벤트 제목 2
-   📅 2025.01.15 ~ 2025.02.15
-   🔗 https://www.bloodinfo.net/...?mi=1302
-
 📍 한국교직원공제회
-1. 이벤트 제목 3
+1. 이벤트 제목 1
    📅 2025.01.20 ~ 2025.02.20
    🔗 https://www.ktcu.or.kr/...
 
 📍 세종예술의전당
-1. 티켓오픈일정
+1. 티켓오픈일정 1
    📅 2025.11.03 ~ 2025.11.03
    🔗 https://www.sjac.or.kr/...
+
+📍 세종특별자치시교육청 평생교육원
+1. 공연/전시 프로그램 1
+   📅 2025.11.10 ~ 2025.11.20
+   🔗 https://life.sje.go.kr/community/events/program-detail/...
 ```
 
 각 사이트의 이벤트가 자동으로 그룹화되어 표시됩니다.
@@ -175,7 +172,7 @@ cron = "0 3 * * *"  # 매일 03:00 UTC (KST 기준 12:00)
 
 ```typescript
 interface SiteEvent {
-  siteId: string;        // 사이트 고유 ID (e.g., 'bloodinfo', 'ktcu')
+  siteId: string;        // 사이트 고유 ID (e.g., 'ktcu', 'sjac', 'life-sje')
   siteName: string;      // 사이트 표시 이름 (한글)
   eventId: string;       // 사이트 내 이벤트 고유 ID
   title: string;         // 이벤트 제목
@@ -207,14 +204,14 @@ Value: {
 TTL: 60일 (5,184,000초)
 
 예시:
-- sent:bloodinfo:12345
 - sent:ktcu:ABC-XYZ-001
 - sent:sjac:585
+- sent:life-sje:12345
 ```
 
 ## 테스트
 
-총 80개의 테스트가 다음 시나리오를 커버합니다:
+총 65개의 테스트가 다음 시나리오를 커버합니다:
 
 - ✅ AC-1: 이벤트 수집 및 파싱
 - ✅ AC-2: 중복 제거 (KV Store 확인)
@@ -258,9 +255,9 @@ export class NewSiteParser implements SiteParser {
 import { NewSiteParser } from './parsers/newsite';
 
 const siteParserRegistry: SiteParser[] = [
-  new BloodinfoParser(),
   new KtcuParser(),
   new SjacParser(),
+  new LifeSjeParser(),
   new NewSiteParser(),  // 추가!
 ];
 ```

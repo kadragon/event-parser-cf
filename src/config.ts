@@ -17,32 +17,6 @@
  */
 export const CONFIG = {
   /**
-   * Bloodinfo parser configuration
-   * Site: https://www.bloodinfo.net
-   */
-  bloodinfo: {
-    /** Base URL for bloodinfo.net */
-    baseUrl: 'https://www.bloodinfo.net',
-
-    /** URL path template for promotion lists */
-    urlPath: '/knrcbs/pr/promtn/progrsPromtnList.do',
-
-    /** Query parameters */
-    queryParams: {
-      type: 'A',
-    },
-
-    /** Promotion category IDs to fetch (mi parameter) */
-    categories: [1301, 1303] as const,
-
-    /** CSS selectors */
-    selectors: {
-      eventLink: 'a.promtnInfoBtn',
-      span: '> span',
-    },
-  },
-
-  /**
    * KTCU (한국교직원공제회) parser configuration
    * Site: https://www.ktcu.or.kr
    */

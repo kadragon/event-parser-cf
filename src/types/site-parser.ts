@@ -2,8 +2,8 @@
  * Site event data structure
  */
 export interface SiteEvent {
-  siteId: string; // Unique site identifier (e.g., 'bloodinfo', 'ktcu')
-  siteName: string; // Display name (e.g., '혈액정보')
+  siteId: string; // Unique site identifier (e.g., 'ktcu', 'sjac')
+  siteName: string; // Display name (e.g., '한국교직원공제회')
   eventId: string; // Unique event identifier within site
   title: string;
   startDate: string;
