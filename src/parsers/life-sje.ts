@@ -1,6 +1,6 @@
 /**
  * Sejong Lifelong Education Institute (life.sje.go.kr) parser
- * Targets 공연/전시 탭 with 접수중(신청중) 상태
+ * Targets 접수중(신청중) 상태 with 모집인원 400명
  */
 
 import { CONFIG } from '../config';
@@ -12,6 +12,7 @@ export interface LifeSjeProgram {
   REC_KEY?: string;
   PROGRAM_TITLE?: string;
   PROGRAM_STATUS?: string | number;
+  RECRUITMENT_PERSONNEL_CNT?: string | number;
   PROGRAM_APPLY_START_DATE?: string;
   PROGRAM_APPLY_END_DATE?: string;
 }
@@ -30,6 +31,7 @@ export interface LifeSjeEvent {
 }
 
 const OPEN_STATUS = new Set(['1', '2']);
+const TARGET_RECRUITMENT_COUNT = 400;
 
 function normalizeDate(value?: string): string | null {
   if (!value) {
@@ -54,6 +56,15 @@ function isOpenStatus(status?: string | number): boolean {
   return OPEN_STATUS.has(normalized);
 }
 
+function isTargetRecruitmentCount(count?: string | number): boolean {
+  if (count === undefined || count === null) {
+    return false;
+  }
+
+  const normalized = Number(String(count).trim());
+  return normalized === TARGET_RECRUITMENT_COUNT;
+}
+
 export function parseLifeSjeEvents(
   response: LifeSjeProgramListResponse
 ): LifeSjeEvent[] {
@@ -62,7 +73,10 @@ export function parseLifeSjeEvents(
   }
 
   return response.RESULT_LIST.flatMap((program) => {
-    if (!isOpenStatus(program.PROGRAM_STATUS)) {
+    if (
+      !isOpenStatus(program.PROGRAM_STATUS) ||
+      !isTargetRecruitmentCount(program.RECRUITMENT_PERSONNEL_CNT)
+    ) {
       return [];
     }
 
@@ -96,7 +110,6 @@ export async function fetchAndParseLifeSjeEvents(): Promise<LifeSjeEvent[]> {
     program_status: CONFIG.lifeSje.programStatusOpen,
     page_no: '1',
     display: CONFIG.lifeSje.pageSize,
-    program_major_category: CONFIG.lifeSje.programMajorCategory,
   });
 
   const response = await fetchWithTimeout(

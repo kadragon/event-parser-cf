@@ -74,9 +74,6 @@ export const CONFIG = {
     /** Manage code required by API */
     manageCode: '150018',
 
-    /** 공연 및 전시 대분류 */
-    programMajorCategory: '3',
-
     /** 접수중(신청중) 상태 필터 */
     programStatusOpen: '1and2',
 
