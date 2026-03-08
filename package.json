@@ -18,13 +18,13 @@
     "xss": "^1.0.15"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4",
-    "@cloudflare/workers-types": "^4.20260301.1",
-    "@types/node": "^25.3.3",
+    "@biomejs/biome": "^2.4.6",
+    "@cloudflare/workers-types": "^4.20260307.1",
+    "@types/node": "^25.3.5",
     "@vitest/coverage-v8": "^4.0.18",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16",
-    "wrangler": "^4.69.0"
+    "wrangler": "^4.71.0"
   }
 }
